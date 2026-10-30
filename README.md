@@ -2,7 +2,7 @@
 
 An unofficial, single-page practice drill for the **Databricks Certified Data Engineer Associate** exam. It has 278 multiple-choice questions with instant feedback, and questions you get wrong come back until you get them right.
 
-**Live site:** https://edxhayter.github.io/databricks-data-engineer-cert-practice/
+**Live site:** https://edxhayter.github.io/databricks-data-engineer-cert-practice/src/practice.html
 
 > Not affiliated with or endorsed by Databricks. These are practice questions written for study, not real exam questions. The Databricks documentation is the source of truth, so check anything important there.
 
