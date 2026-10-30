@@ -1,4 +1,4 @@
-<title>Lakehouse Cram Drill</title>
+<title>Data Engineer Associate Practice</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -90,7 +90,7 @@ textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); marg
 
 <div class="wrap">
   <header>
-    <h1>Lakehouse Cram Drill <small id="bankcount"></small></h1>
+    <h1>Data Engineer Associate Practice <small id="bankcount"></small></h1>
     <div class="modes" role="group" aria-label="Mode">
       <button id="mode-drill" aria-pressed="true">Drill</button>
       <button id="mode-exam" aria-pressed="false">Timed 45</button>
@@ -1070,7 +1070,7 @@ const SECTIONS = { 1: "Platform", 2: "Ingestion", 3: "Transform", 4: "Jobs", 5: 
 const WEIGHT = { 1: 6, 2: 21, 3: 22, 4: 16, 5: 10, 6: 10, 7: 15 };
 const EXAM_SPLIT = { 1: 3, 2: 9, 3: 10, 4: 7, 5: 5, 6: 4, 7: 7 };
 const LETTERS = ["A", "B", "C", "D"];
-const KEY = "cram-drill-v1";
+const KEY = "de-associate-practice-v1";
 const $ = (id) => document.getElementById(id);
 
 // ---- persistence (per-browser convenience only) ----
@@ -1289,7 +1289,7 @@ $("copy").addEventListener("click", () => {
   const rows = BANK.map((q, i) => [q, i]).filter(([, i]) => store.stats[i] && store.stats[i].w > 0)
     .sort((a, b) => store.stats[b[1]].w - store.stats[a[1]].w)
     .map(([q, i]) => `S${q[0]} | missed ${store.stats[i].w}x, right ${store.stats[i].c}x | ${q[1].replace(/`/g, "")} | Answer: ${q[2][0].replace(/`/g, "")}`);
-  const text = rows.length ? "My cram-drill misses:\n" + rows.join("\n") : "No misses yet.";
+  const text = rows.length ? "My practice misses:\n" + rows.join("\n") : "No misses yet.";
   const done = () => { $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy misses"), 1500); };
   const fallback = () => { $("copyout").innerHTML = `<textarea id="copyfallback" readonly></textarea>`; $("copyfallback").value = text; $("copyfallback").select(); };
   try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }

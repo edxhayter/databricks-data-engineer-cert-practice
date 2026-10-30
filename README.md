@@ -1,4 +1,4 @@
-# Databricks Data Engineer Associate: Cram Drill
+# Databricks Data Engineer Associate: Practice Drill
 
 An unofficial, single-page practice drill for the **Databricks Certified Data Engineer Associate** exam. It has 278 multiple-choice questions with instant feedback, and questions you get wrong come back until you get them right.
 
@@ -25,7 +25,7 @@ Progress is saved in your browser's `localStorage`. It stays on your machine and
 
 It's one self-contained HTML file. Its only external request is for Google Fonts, and it falls back to system fonts when offline.
 
-- **Open it directly:** download `src/cram-drill.html` and open it in a browser.
+- **Open it directly:** download `src/practice.html` and open it in a browser.
 - **Serve it locally:**
   ```bash
   python3 -m http.server 8000
@@ -42,7 +42,7 @@ It was built over a few days of study sessions in Claude Code (26–30 October 2
 3. **Checked current product names.** Claude listed the renames the guide relies on: DLT → Lakeflow Declarative Pipelines, Workflows → Lakeflow Jobs, Asset Bundles → Declarative Automation Bundles, Repos → Git folders, and Shared / Single user → Standard / Dedicated access modes. This kept the questions from using outdated names.
 4. **Ran mock exams in chat.** Claude ran two full 45-question mock exams interactively, logged the answers, allowed changes before submitting, and then marked them by section. The scores were 37/45 and 41/45. The misses were mainly Auto Loader defaults, which showed where to focus.
 5. **Taught the weak areas and tested again.** This round produced a lesson on COPY INTO and Auto Loader schema evolution, a 10-question drill and a 5-question retest. After that came a cheat sheet of defaults and configuration options for every section, each row checked against a docs page.
-6. **Moved to this page for speed.** Answering one question per chat message was too slow for cramming, so Claude built this page and the first 143 questions from the facts already checked.
+6. **Moved to this page for speed.** Answering one question per chat message was too slow for quick revision, so Claude built this page and the first 143 questions from the facts already checked.
 7. **Added questions in batches.** Later batches covered AUTO CDC, Lakeflow Connect, pipeline modes and refreshes, task values and job parameters, Git folder operations, row filters and column masks, specific Unity Catalog privileges, and when to choose COPY INTO, Auto Loader or a Lakeflow Connect connector. Each batch started with Claude reading the relevant docs pages.
 8. **Checked automatically before each publish.** Each build checked that:
    - every question has four options;
@@ -66,5 +66,5 @@ It was built over a few days of study sessions in Claude Code (26–30 October 2
 ## Files
 
 - `index.html`: a redirect so the site root opens the drill.
-- `src/cram-drill.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey]`. The correct option is listed first in the data and shuffled when shown.
+- `src/practice.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey]`. The correct option is listed first in the data and shuffled when shown.
 - `README.md`: this file.
