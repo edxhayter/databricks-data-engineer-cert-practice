@@ -2,7 +2,7 @@
 
 An unofficial, single-page practice drill for the **Databricks Certified Data Engineer Associate** exam. It has 278 multiple-choice questions with instant feedback, and questions you get wrong come back until you get them right.
 
-**Live site:** https://edxhayter.github.io/databricks-de-cram-drill/
+**Live site:** https://edxhayter.github.io/databricks-data-engineer-cert-practice/
 
 > Not affiliated with or endorsed by Databricks. These are practice questions written for study, not real exam questions. The Databricks documentation is the source of truth, so check anything important there.
 
@@ -25,12 +25,12 @@ Progress is saved in your browser's `localStorage`. It stays on your machine and
 
 It's one self-contained HTML file. Its only external request is for Google Fonts, and it falls back to system fonts when offline.
 
-- **Open it directly:** download `index.html` and open it in a browser.
+- **Open it directly:** download `src/cram-drill.html` and open it in a browser.
 - **Serve it locally:**
   ```bash
   python3 -m http.server 8000
   ```
-  Then open http://localhost:8000.
+  Then open http://localhost:8000 (the root `index.html` redirects to the drill).
 - **Host it:** fork this repo and enable GitHub Pages (Settings → Pages → deploy from the `main` branch, root folder).
 
 ## How it was built
@@ -65,5 +65,6 @@ It was built over a few days of study sessions in Claude Code (26–30 October 2
 
 ## Files
 
-- `index.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey]`. The correct option is listed first in the data and shuffled when shown.
+- `index.html`: a redirect so the site root opens the drill.
+- `src/cram-drill.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey]`. The correct option is listed first in the data and shuffled when shown.
 - `README.md`: this file.
