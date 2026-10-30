@@ -1,0 +1,1306 @@
+<title>Lakehouse Cram Drill</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one working column (question card) with a stats rail that drops below it on phones. Keyboard first. */
+:root {
+  --bg: #f3f5f7; --surface: #ffffff; --ink: #18212b; --muted: #5b6876; --line: #d9dfe5;
+  --accent: #0e6a73; --accent-soft: #e1f0f1; --good: #1d7346; --good-soft: #e3f3ea;
+  --bad: #b02a22; --bad-soft: #fbe7e5; --warn: #9a5b00; --warn-soft: #fbefdc;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161c; --surface: #19212a; --ink: #e6ebf0; --muted: #9aa7b4; --line: #2b3641;
+  --accent: #5cc3cb; --accent-soft: #163338; --good: #5fcf92; --good-soft: #15301f;
+  --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0b45a; --warn-soft: #382a14; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #19212a; --ink: #e6ebf0; --muted: #9aa7b4; --line: #2b3641;
+  --accent: #5cc3cb; --accent-soft: #163338; --good: #5fcf92; --good-soft: #15301f;
+  --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0b45a; --warn-soft: #382a14; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { font-family: var(--display); font-size: 26px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: .04em; margin-left: 8px; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.modes button { border: 0; background: transparent; color: var(--muted); font: 600 13px var(--body); padding: 7px 14px; cursor: pointer; }
+.modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 11px; font: 500 13px var(--body); cursor: pointer; }
+.chip .w { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: 4px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.chip.missed[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.tag { text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+.tag.repeat { background: var(--warn-soft); color: var(--warn); }
+.q { font-size: 18px; line-height: 1.45; font-weight: 500; margin: 0 0 16px; }
+code { font-family: var(--mono); font-size: .88em; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; text-align: left; width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 10px 12px; font: 15px/1.45 var(--body); cursor: pointer; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt:focus-visible, .chip:focus-visible, .modes button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt .k { font-family: var(--mono); font-weight: 600; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; text-align: center; line-height: 22px; }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt:disabled { cursor: default; }
+.feedback { margin-top: 14px; border-left: 3px solid var(--line); padding: 8px 12px; background: var(--bg); border-radius: 0 6px 6px 0; }
+.feedback.ok { border-color: var(--good); }
+.feedback.no { border-color: var(--bad); }
+.feedback strong { display: block; margin-bottom: 2px; }
+.feedback a { color: var(--accent); font-size: 13px; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--surface); border-radius: 6px; padding: 8px 16px; font: 600 14px var(--body); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.danger { border-color: var(--bad); background: transparent; color: var(--bad); }
+.hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.rail { display: flex; flex-direction: column; gap: 14px; }
+.rail h2 { font-family: var(--display); font-size: 15px; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; color: var(--muted); }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kpi b { display: block; font-family: var(--mono); font-size: 22px; font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 12px; color: var(--muted); }
+.secs { display: flex; flex-direction: column; gap: 8px; }
+.sec { display: grid; grid-template-columns: 26px minmax(0, 1fr) 64px; gap: 8px; align-items: center; font-size: 13px; }
+.sec .n { font-family: var(--mono); color: var(--muted); }
+.sec .v { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+.bar { height: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.bar i.lo { background: var(--bad); } .bar i.mid { background: var(--warn); } .bar i.hi { background: var(--good); }
+.timer { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.timer.late { color: var(--bad); }
+.dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.dots button { width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font: 11px var(--mono); cursor: pointer; padding: 0; }
+.dots button.done { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.dots button.cur { outline: 2px solid var(--ink); }
+.review { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.review .item { border-top: 1px solid var(--line); padding-top: 10px; }
+.review .item p { margin: 4px 0; }
+.small { font-size: 13px; color: var(--muted); }
+textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); margin-top: 8px; }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { .opt, .chip { transition: border-color .12s, background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Lakehouse Cram Drill <small id="bankcount"></small></h1>
+    <div class="modes" role="group" aria-label="Mode">
+      <button id="mode-drill" aria-pressed="true">Drill</button>
+      <button id="mode-exam" aria-pressed="false">Timed 45</button>
+    </div>
+  </header>
+  <div class="chips" id="chips" role="group" aria-label="Filter by section"></div>
+  <div class="grid">
+    <main class="card" id="main" aria-live="polite"></main>
+    <aside class="rail">
+      <section class="card">
+        <h2>This session</h2>
+        <div class="kpis">
+          <div class="kpi"><b id="k-ans">0</b><span>answered</span></div>
+          <div class="kpi"><b id="k-acc">–</b><span>correct</span></div>
+          <div class="kpi"><b id="k-pace">–</b><span>sec per answer</span></div>
+          <div class="kpi"><b id="k-due">0</b><span>misses to repeat</span></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>All-time by section</h2>
+        <div class="secs" id="secs"></div>
+      </section>
+      <section class="card">
+        <h2>Your misses</h2>
+        <p class="small">Copy the list of questions you've missed and paste it to Claude for a targeted explanation.</p>
+        <div class="actions" style="margin-top:8px">
+          <button class="btn ghost" id="copy">Copy misses</button>
+          <button class="btn danger" id="reset">Reset progress</button>
+        </div>
+        <div id="copyout"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+// Question bank. Format: [section, question, [correct, wrong, wrong, wrong], explanation, docKey, optionalCode]
+// The correct option is always listed first here; the page shuffles option order on display.
+const DOC = "https://docs.databricks.com/aws/en/";
+const LINKS = {
+  managed: DOC + "tables/managed",
+  hist: DOC + "delta/history",
+  ccfg: DOC + "compute/configure",
+  cm: DOC + "compute/clusters-manage",
+  wh: DOC + "compute/sql-warehouse/create",
+  jc: DOC + "jobs/compute",
+  copy: DOC + "sql/language-manual/delta-copy-into",
+  als: DOC + "ingestion/cloud-object-storage/auto-loader/schema",
+  alf: DOC + "ingestion/cloud-object-storage/auto-loader/file-detection-modes",
+  alp: DOC + "ingestion/cloud-object-storage/auto-loader/production",
+  scd: DOC + "ingestion/lakeflow-connect/scd",
+  lfc: DOC + "ingestion/lakeflow-connect/",
+  aqe: DOC + "optimizations/aqe",
+  hints: DOC + "sql/language-manual/sql-ref-syntax-qry-select-hints",
+  exp: DOC + "ldp/expectations",
+  dlt: DOC + "ldp/concepts/where-is-dlt",
+  ldp: DOC + "ldp/concepts/",
+  mv: DOC + "sql/language-manual/sql-ref-syntax-ddl-create-materialized-view",
+  join: DOC + "sql/language-manual/sql-ref-syntax-qry-select-join",
+  pyspark: "https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/dataframe.html",
+  pyfn: "https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html",
+  runif: DOC + "jobs/run-if",
+  cfg: DOC + "jobs/configure-job",
+  foreach: DOC + "jobs/for-each",
+  trig: DOC + "jobs/triggers",
+  tut: DOC + "jobs/trigger-table-update",
+  fat: DOC + "jobs/file-arrival-triggers",
+  cf: DOC + "jobs/control-flow",
+  bset: DOC + "dev-tools/bundles/settings",
+  bvar: DOC + "dev-tools/bundles/variables",
+  bdm: DOC + "dev-tools/bundles/deployment-modes",
+  bun: DOC + "dev-tools/bundles/",
+  lc: DOC + "delta/clustering",
+  po: DOC + "optimizations/predictive-optimization",
+  perm: DOC + "data-governance/unity-catalog/access-control/permissions-concepts",
+  deny: DOC + "sql/language-manual/security-deny",
+  undrop: DOC + "sql/language-manual/sql-ref-syntax-ddl-undrop-table",
+  conv: DOC + "tables/convert-external-managed",
+  abac: DOC + "data-governance/unity-catalog/abac/",
+  fm: DOC + "data-governance/unity-catalog/filters-and-masks/",
+  git: DOC + "repos/",
+};
+
+const BANK = [
+// ---------- S1 Platform ----------
+[1, "An engineer runs `CREATE TABLE main.sales.orders (id INT, amount DOUBLE)` with no `LOCATION` and no `USING` clause. What is created?",
+ ["A Unity Catalog managed Delta table", "A Unity Catalog external Delta table in the workspace root", "A managed Iceberg table", "A Hive metastore Parquet table"],
+ "With no LOCATION and no USING, the default is a UC managed table in Delta format. Iceberg needs an explicit USING iceberg.", "managed"],
+[1, "With default table properties, how old must unreferenced data files be before `VACUUM` deletes them?",
+ ["7 days", "30 days", "24 hours", "90 days"],
+ "delta.deletedFileRetentionDuration defaults to 7 days. delta.logRetentionDuration (history) defaults to 30 days.", "hist"],
+[1, "What is the default value of `delta.logRetentionDuration`?",
+ ["30 days", "7 days", "14 days", "365 days"],
+ "Table history is kept for 30 days by default. Data files are kept for 7 days (deletedFileRetentionDuration), so practical time travel is about 7 days.", "hist"],
+[1, "A team needs to time travel 60 days back on a Delta table. What must they change?",
+ ["Raise both delta.logRetentionDuration and delta.deletedFileRetentionDuration to at least 60 days", "Raise only delta.logRetentionDuration to 60 days", "Raise only delta.deletedFileRetentionDuration to 60 days", "Nothing, because time travel is unlimited by default"],
+ "Time travel needs both the log entries and the data files for that version, so both retention settings must cover the window.", "hist"],
+[1, "`RESTORE TABLE t TO VERSION AS OF 3` fails, saying data files are missing. What is the most likely cause?",
+ ["VACUUM has already removed the data files that version 3 needs", "RESTORE only works on external tables", "RESTORE needs the table to be partitioned", "Version numbers start at 10"],
+ "RESTORE fails if VACUUM has deleted the files a version depends on. RESTORE also needs MODIFY on the table.", "hist"],
+[1, "Which compute access mode does Databricks recommend for most workloads, unless you need a feature it doesn't support?",
+ ["Standard", "Dedicated", "No isolation shared", "Custom"],
+ "Standard (formerly Shared) is recommended. Dedicated (formerly Single user) is for ML runtimes, GPUs, R, or features Standard doesn't support.", "ccfg"],
+[1, "A new serverless SQL warehouse is created with default settings. When does it auto stop?",
+ ["After 10 minutes idle", "After 45 minutes idle", "After 120 minutes idle", "Never"],
+ "Serverless warehouses default to 10 minutes. Pro and classic default to 45 minutes.", "wh"],
+[1, "A new Pro SQL warehouse is created with default settings. When does it auto stop?",
+ ["After 45 minutes idle", "After 10 minutes idle", "After 5 minutes idle", "Never"],
+ "Pro and classic warehouses default to 45 minutes (minimum 10). Serverless defaults to 10.", "wh"],
+[1, "Which statement about job compute is correct?",
+ ["It is created for the job run, terminates when the job ends, and can't be restarted", "It stays running between scheduled runs", "It can be shared interactively by notebook users", "It is the same as an all-purpose cluster with a job attached"],
+ "Job compute exists only for the run. All-purpose compute is for interactive work and isn't recommended for production jobs.", "cm"],
+[1, "On a compute resource running a current Databricks Runtime, Photon is:",
+ ["On by default (DBR 9.1 LTS and above)", "Off until enabled by an admin", "Only available on SQL warehouses", "Only available for Python UDFs"],
+ "Photon is enabled by default on DBR 9.1 LTS and above.", "ccfg"],
+
+// ---------- S2 Ingestion ----------
+[2, "An Auto Loader stream has no rate-limit options. 40,000 new files are waiting. How many files does each micro-batch process?",
+ ["At most 1,000", "All 40,000 in one batch", "At most 10,000", "At most 100"],
+ "cloudFiles.maxFilesPerTrigger defaults to 1,000. It is a hard limit; maxBytesPerTrigger is a soft limit.", "alp"],
+[2, "Both `cloudFiles.maxFilesPerTrigger` and `cloudFiles.maxBytesPerTrigger` are set. Which statement is correct?",
+ ["The file limit is hard, the byte limit is soft, and the batch stops at whichever limit is reached first", "The byte limit is hard and the file limit is soft", "Only the last option set is applied", "Setting both causes an error"],
+ "The docs say the file limit is a hard limit but the byte limit is a soft limit. A batch may exceed maxBytesPerTrigger.", "alp"],
+[2, "Auto Loader infers the schema (no `.schema()` call). Which schema evolution mode is used by default?",
+ ["addNewColumns", "none", "rescue", "failOnNewColumns"],
+ "Without a provided schema, the default is addNewColumns. With .schema(), the default is none.", "als"],
+[2, "An Auto Loader stream is given an explicit schema with `.schema(...)`. What is the default schema evolution mode?",
+ ["none", "addNewColumns", "rescue", "failOnNewColumns"],
+ "With a provided schema the default is none: new columns are ignored. addNewColumns isn't allowed with .schema().", "als"],
+[2, "An Auto Loader stream uses the default mode with an inferred schema. A file arrives with a brand-new column. What happens?",
+ ["The stream stops with an UnknownFieldException; on restart it picks up the updated schema", "The new column is silently ignored", "The new column's values go to _rescued_data and the stream continues", "The stream fails permanently until the table is recreated"],
+ "addNewColumns stops the stream, updates the schema, and the restart includes the column. Run it in a Lakeflow Job with retries.", "als"],
+[2, "Default evolution mode, inferred schema. A column inferred as INT later receives the value 'N/A'. What happens?",
+ ["The column stays INT and the value goes to _rescued_data", "The column changes to STRING", "The stream stops and widens the type on restart", "The row is dropped silently"],
+ "In addNewColumns, existing columns don't change type. Type mismatches go to the rescued data column.", "als"],
+[2, "Which mode lets Auto Loader widen an INT column to BIGINT when larger values arrive?",
+ ["addNewColumnsWithTypeWidening", "addNewColumns", "rescue", "none"],
+ "addNewColumnsWithTypeWidening (Public Preview, DBR 16.4+) widens supported types. Plain addNewColumns never changes existing types.", "als"],
+[2, "The inferred schema has a column `userId`. A file contains `UserID`. With default settings, where does that value end up?",
+ ["In _rescued_data", "In the userId column", "In a new UserID column", "It causes the stream to fail"],
+ "Case mismatches are one of the things the rescued data column catches, along with type mismatches and fields missing from the schema.", "als"],
+[2, "What does Auto Loader's `_rescued_data` column contain?",
+ ["Data that couldn't be parsed into the schema, stored as JSON with the source file path", "A copy of every raw row", "Only rows that failed expectations", "The checkpoint offsets"],
+ "Rescued values are stored as a JSON blob along with the path of the source file.", "als"],
+[2, "Auto Loader reads JSON files with schema inference and no other options. What type are the inferred columns?",
+ ["STRING", "The type seen in the first file", "VARIANT", "The widest numeric type"],
+ "For JSON, CSV and XML, columns are inferred as STRING unless cloudFiles.inferColumnTypes is true (or you use schema hints).", "als"],
+[2, "By default, how much data does Auto Loader sample for schema inference?",
+ ["The first 50 GB or 1,000 files, whichever comes first", "The first file only", "The first 10 GB or 100 files", "Every file in the directory"],
+ "The default sample is 50 GB or 1,000 files, whichever limit is hit first.", "als"],
+[2, "An engineer wants Auto Loader to keep inferring the schema but force `amount` to DECIMAL(10,2). What should they use?",
+ ["cloudFiles.schemaHints", "A full .schema() definition", "cloudFiles.schemaEvolutionMode = rescue", "COPY_OPTIONS ('mergeSchema' = 'true')"],
+ "Schema hints override the inferred type for named columns. They apply only when you don't pass .schema().", "als"],
+[2, "An engineer provides `.schema(...)` and sets `schemaEvolutionMode` to `addNewColumns`. What happens?",
+ ["It isn't allowed; to evolve, use schema hints instead of a full schema", "New columns are added to the provided schema", "The provided schema is ignored", "The stream switches to rescue mode"],
+ "addNewColumns isn't supported with a provided schema. Pass the known types as schemaHints instead.", "als"],
+[2, "Which schema evolution mode never changes the schema and never fails on new columns, sending unexpected data to the rescued data column?",
+ ["rescue", "none", "failOnNewColumns", "addNewColumns"],
+ "rescue keeps the schema fixed and puts new data into _rescued_data. none ignores new columns (unless rescuedDataColumn is set).", "als"],
+[2, "Which schema evolution mode fails the stream on a new column and keeps failing until the schema is updated by hand?",
+ ["failOnNewColumns", "addNewColumns", "rescue", "none"],
+ "failOnNewColumns doesn't restart successfully until someone changes the schema or removes the offending file.", "als"],
+[2, "An Auto Loader stream has no file detection settings. Which mode does it use?",
+ ["Directory listing", "File notification", "File events", "Polling the checkpoint"],
+ "Directory listing is the default. File notification is recommended for most workloads.", "alf"],
+[2, "Which file detection approach does Databricks recommend for most Auto Loader workloads?",
+ ["File notification mode, using file events on the external location", "Directory listing with a continuous trigger", "Directory listing with maxFilesPerTrigger = 1", "Manually listing files with dbutils"],
+ "File notification is recommended. With file events enabled on the external location, no extra cloud permissions are needed.", "alf"],
+[2, "A stream is moved from directory listing to file notification mode. What happens to exactly-once guarantees?",
+ ["They are kept; you can switch modes between restarts", "Every file is reprocessed", "The checkpoint must be deleted first", "Switching isn't supported"],
+ "Auto Loader lets you switch file detection modes across restarts and still keeps exactly-once processing.", "alf"],
+[2, "An Auto Loader job only needs to run once an hour and cost matters more than latency. Which trigger fits?",
+ ["trigger(availableNow=True) on a schedule", "A continuous trigger in directory listing mode", "trigger(processingTime='1 second')", "No trigger, running all day"],
+ "availableNow processes everything waiting and then stops. Continuous triggers in directory listing mode are costly.", "alp"],
+[2, "What must stay the same between scheduled `availableNow` runs of an Auto Loader stream?",
+ ["The checkpoint location", "The cluster ID", "The number of input files", "The notebook name"],
+ "The checkpoint tracks which files were processed. Keep it stable and don't let a storage lifecycle policy delete it.", "alp"],
+[2, "`COPY INTO` is run twice on the same source path with default options. One file was modified between runs. What happens on the second run?",
+ ["Files already loaded are skipped, including the modified one", "Only the modified file is reloaded", "All files are loaded again", "The command fails"],
+ "COPY INTO is idempotent: force defaults to false, so loaded files are skipped even if modified.", "copy"],
+[2, "How do you make `COPY INTO` reload files it has already loaded?",
+ ["COPY_OPTIONS ('force' = 'true')", "FORMAT_OPTIONS ('force' = 'true')", "COPY_OPTIONS ('mergeSchema' = 'true')", "Add VALIDATE ALL"],
+ "force is a COPY_OPTIONS setting and defaults to false.", "copy"],
+[2, "An engineer wants `COPY INTO` to check the source files for problems without writing any data. What do they use?",
+ ["VALIDATE", "COPY_OPTIONS ('force' = 'false')", "DESCRIBE HISTORY", "FORMAT_OPTIONS ('dryRun' = 'true')"],
+ "VALIDATE (DBR 10.4+) checks the data and writes nothing. With no row count it validates all rows.", "copy"],
+[2, "Where does `mergeSchema` go in a `COPY INTO` statement to allow schema evolution?",
+ ["COPY_OPTIONS", "FORMAT_OPTIONS only", "The TBLPROPERTIES clause", "A Spark config"],
+ "mergeSchema is a COPY_OPTIONS setting and defaults to false.", "copy"],
+[2, "A table is created with no columns (`CREATE TABLE t;`) as a `COPY INTO` target. What lets COPY INTO set its schema?",
+ ["COPY_OPTIONS ('mergeSchema' = 'true')", "COPY_OPTIONS ('force' = 'true')", "Nothing; COPY INTO can't load into a schemaless table", "VALIDATE 100 ROWS"],
+ "With mergeSchema true, COPY INTO infers the schema of a schemaless table (DBR 11.3+).", "copy"],
+[2, "Which statement about the `FILES` clause of `COPY INTO` is correct?",
+ ["It accepts up to 1,000 file names and can't be combined with PATTERN", "It accepts unlimited file names", "It must be combined with PATTERN", "It accepts regular expressions"],
+ "FILES takes up to 1,000 names. PATTERN is the alternative, using a glob.", "copy"],
+[2, "What syntax does the `PATTERN` clause of `COPY INTO` use?",
+ ["A glob pattern", "A Java regular expression", "SQL LIKE syntax", "A JSONPath expression"],
+ "PATTERN takes a glob such as 'year=2026/*.json'.", "copy"],
+[2, "`COPY INTO` reads from a path covered by a Unity Catalog external location. Which privilege is needed on that external location?",
+ ["READ FILES", "SELECT", "USE CATALOG", "MODIFY"],
+ "READ FILES on the external location grants read access to the source files. Inline credentials are only needed when no external location covers the path.", "copy"],
+[2, "A Lakeflow Connect managed connector ingests a Salesforce object with default settings. How are updated records stored?",
+ ["Overwritten in place (SCD type 1)", "Kept as history rows (SCD type 2)", "Appended as duplicate rows", "Dropped"],
+ "History tracking is off by default, which is SCD type 1. Set scd_type: SCD_TYPE_2 where the connector supports it.", "scd"],
+[2, "Data must be pulled from Salesforce into Unity Catalog incrementally, with as little custom code as possible. What fits best?",
+ ["A Lakeflow Connect managed connector", "Auto Loader", "COPY INTO", "A notebook calling the REST API every minute"],
+ "Managed connectors handle SaaS apps and databases end to end. Auto Loader and COPY INTO read files from cloud storage.", "lfc"],
+[2, "Millions of JSON files land in cloud storage every day, and new fields appear now and then. Which ingestion method fits best?",
+ ["Auto Loader", "COPY INTO", "The file upload UI", "A managed Lakeflow Connect connector"],
+ "Auto Loader scales to millions of files and handles schema evolution. COPY INTO suits smaller loads of thousands of files.", "alp"],
+[2, "A partner's REST API has no connector. The data must land in a UC table every hour. What is the usual pattern?",
+ ["A notebook calls the API and writes to a UC table or volume, scheduled by a Lakeflow Job", "Auto Loader pointed at the API URL", "COPY INTO from the API URL", "A file arrival trigger on the API"],
+ "Custom JDBC/REST code in a notebook, orchestrated by Lakeflow Jobs, is the guide's pattern for sources with no connector.", "cf"],
+
+// ---------- S3 Transform ----------
+[3, "Adaptive Query Execution (AQE) on a current Databricks Runtime is:",
+ ["On by default", "Off by default", "Only available on SQL warehouses", "Only on for streaming queries"],
+ "AQE is enabled by default. It re-optimizes the plan at runtime.", "aqe"],
+[3, "What is the default value of `spark.sql.shuffle.partitions`?",
+ ["200", "Number of cores", "1,000", "auto"],
+ "The default is 200. You can set it to auto to let Databricks choose.", "aqe"],
+[3, "Which value lets Databricks pick the number of shuffle partitions automatically?",
+ ["spark.sql.shuffle.partitions = auto", "spark.sql.shuffle.partitions = -1", "spark.sql.shuffle.partitions = 0", "spark.default.parallelism = auto"],
+ "Setting shuffle partitions to auto enables auto-optimized shuffle.", "aqe"],
+[3, "What is AQE's runtime broadcast join threshold on Databricks (`spark.databricks.adaptive.autoBroadcastJoinThreshold`)?",
+ ["30 MB", "10 MB", "100 MB", "1 GB"],
+ "AQE's own threshold is 30 MB. Apache Spark's static spark.sql.autoBroadcastJoinThreshold is 10 MB.", "aqe"],
+[3, "A query uses `broadcast(dim_df)`, and `dim_df` is larger than the broadcast threshold. What happens?",
+ ["dim_df is broadcast anyway", "The hint is ignored and a sort-merge join is used", "The query fails", "Only the first 10 MB is broadcast"],
+ "A broadcast hint broadcasts the table regardless of autoBroadcastJoinThreshold.", "hints"],
+[3, "Which setting turns off automatic broadcast joins based on size?",
+ ["spark.sql.autoBroadcastJoinThreshold = -1", "spark.sql.shuffle.partitions = 0", "spark.sql.adaptive.enabled = true", "spark.default.parallelism = 1"],
+ "Setting the threshold to -1 disables automatic broadcasting. Explicit hints still work.", "hints"],
+[3, "Which of these does AQE do at runtime?",
+ ["Switches sort-merge joins to broadcast joins and splits skewed join partitions", "Rewrites the table's file layout", "Adds liquid clustering keys", "Increases executor memory"],
+ "AQE changes join strategies, coalesces small partitions, splits skewed join partitions and skips empty relations.", "aqe"],
+[3, "A pipeline expectation is declared with no `ON VIOLATION` clause. What happens to rows that fail it?",
+ ["They are kept, and the failure is recorded in metrics", "They are dropped", "The update fails", "They are written to a quarantine table"],
+ "The default action is warn: invalid rows are written and counted.", "exp"],
+[3, "Rows that fail a check must be removed from the target, but the pipeline must keep running. Which Python decorator?",
+ ["@dp.expect_or_drop", "@dp.expect", "@dp.expect_or_fail", "@dp.expect_all"],
+ "expect_or_drop (SQL: ON VIOLATION DROP ROW) drops invalid rows and records metrics.", "exp"],
+[3, "Any row with a null `order_id` must stop the pipeline update. Which SQL clause?",
+ ["CONSTRAINT valid_id EXPECT (order_id IS NOT NULL) ON VIOLATION FAIL UPDATE", "CONSTRAINT valid_id EXPECT (order_id IS NOT NULL)", "CONSTRAINT valid_id EXPECT (order_id IS NOT NULL) ON VIOLATION DROP ROW", "CHECK (order_id IS NOT NULL) WARN"],
+ "FAIL UPDATE (Python: expect_or_fail) stops the update when a row fails.", "exp"],
+[3, "Which Python module is the current API for Lakeflow pipelines?",
+ ["pyspark.pipelines (imported as dp)", "dlt only", "databricks.workflows", "pyspark.streaming.dlt"],
+ "from pyspark import pipelines as dp is the current API. Old code using import dlt still works.", "dlt"],
+[3, "Events are only appended to a source, and each must be processed once with low latency. Which pipeline object?",
+ ["Streaming table", "Materialized view", "View", "Temporary view"],
+ "Streaming tables process append-only sources incrementally, each row once.", "ldp"],
+[3, "A gold table aggregates revenue by region. The source table gets updates and deletes. Which object keeps the result correct?",
+ ["Materialized view", "Streaming table", "Temporary view", "External table"],
+ "Materialized views recompute (incrementally where possible) so results reflect updates and deletes in the source.", "ldp"],
+[3, "Which gold-layer object stores no data and runs its query each time it's read?",
+ ["View", "Materialized view", "Streaming table", "Managed table"],
+ "A view is a saved query. Materialized views and streaming tables store results.", "ldp"],
+[3, "A materialized view has `SCHEDULE CRON '0 30 2 * * ?'`. When does it refresh?",
+ ["Every day at 02:30:00", "At 00:30 on the 2nd of each month", "Every 30 minutes", "At 30 seconds past 02:00"],
+ "Quartz cron: seconds minutes hours day-of-month month day-of-week. So 0 s, 30 min, hour 2, every day.", "mv"],
+[3, "Which cron string refreshes a materialized view every day at midnight UTC?",
+ ["'0 0 0 * * ?'", "'0 0 * * *'", "'* * 0 * * ?'", "'0 0 24 * * ?'"],
+ "Quartz uses six fields starting with seconds. The docs give '0 0 0 * * ?' as daily at midnight.", "mv"],
+[3, "In a Quartz cron expression, what is the first field?",
+ ["Seconds", "Minutes", "Hours", "Day of month"],
+ "Order: seconds, minutes, hours, day-of-month, month, day-of-week. A ? goes in one of the two day fields.", "mv"],
+[3, "`orders.join(customers, \"customer_id\", \"inner\")`. Some orders have a customer_id with no matching customer. What happens to those orders?",
+ ["They are not in the result", "They appear with null customer columns", "They appear twice", "The join fails"],
+ "An inner join keeps only rows that match on both sides.", "join"],
+[3, "`customers.join(orders, \"customer_id\", \"left\")`. Some customers have no orders. What happens to them?",
+ ["They appear with nulls in the orders columns", "They are dropped", "They appear once per order in the table", "The join fails"],
+ "A left join returns every left row and appends NULL when there's no match.", "join"],
+[3, "`colors` has 4 rows and `sizes` has 5 rows. How many rows does `colors.crossJoin(sizes)` return?",
+ ["20", "9", "5", "4"],
+ "A cross join returns every combination: 4 x 5 = 20.", "join"],
+[3, "Two DataFrames with the same columns in a different order must be stacked by column name. Which method?",
+ ["unionByName", "union", "join", "crossJoin"],
+ "union matches columns by position. unionByName matches them by name.", "pyspark"],
+[3, "In PySpark, `df1.union(df2)` is run on two DataFrames that share some identical rows. What happens to the duplicates?",
+ ["They are kept, like SQL UNION ALL", "They are removed, like SQL UNION", "The union fails", "Only the rows from df1 are kept"],
+ "DataFrame.union keeps duplicates. Add .distinct() to remove them. In SQL, UNION removes duplicates and UNION ALL keeps them.", "pyspark"],
+[3, "A table must combine rows from two sources and keep every row, including exact duplicates. Which SQL operator?",
+ ["UNION ALL", "UNION", "INTERSECT", "EXCEPT"],
+ "UNION ALL keeps duplicates; UNION removes them.", "join"],
+[3, "An array column `tags` must become one row per tag, but rows with a null or empty array must still appear. Which function?",
+ ["explode_outer", "explode", "flatten", "split"],
+ "explode drops rows whose array is null or empty. explode_outer keeps them with a null value.", "pyfn"],
+[3, "`full_name` holds 'Ada Lovelace'. Which expression gives the last name?",
+ ["split(col('full_name'), ' ').getItem(1)", "split(col('full_name'), ' ').getItem(2)", "explode(split(col('full_name'), ' '))", "col('full_name').substr(' ')"],
+ "split returns an array and getItem is zero-based, so index 1 is the second word.", "pyfn"],
+[3, "Which method renames the column `cust_id` to `customer_id`?",
+ ["df.withColumnRenamed('cust_id', 'customer_id')", "df.withColumn('customer_id', 'cust_id')", "df.alias('customer_id')", "df.rename('cust_id')"],
+ "withColumnRenamed(existing, new) renames one column.", "pyspark"],
+[3, "Bronze has duplicate events. Each `event_id` must appear once in silver. Which method?",
+ ["df.dropDuplicates(['event_id'])", "df.distinct('event_id')", "df.dropna(subset=['event_id'])", "df.groupBy('event_id')"],
+ "dropDuplicates with a subset keeps one row per key. distinct() compares whole rows and takes no arguments.", "pyspark"],
+[3, "A dashboard needs a fast, approximate count of unique visitors across billions of rows. Which function?",
+ ["approx_count_distinct", "countDistinct", "count", "collect_set"],
+ "approx_count_distinct trades a small error for much lower cost than an exact countDistinct.", "pyfn"],
+[3, "Which DataFrame method returns count, mean, stddev, min, the 25%/50%/75% quartiles and max by default?",
+ ["summary()", "describe()", "count()", "approxQuantile()"],
+ "summary() includes the quartiles by default. describe() returns count, mean, stddev, min and max.", "pyspark"],
+[3, "Nulls in the `quantity` column must be replaced with 0 when cleaning bronze into silver. Which code?",
+ ["df.fillna({'quantity': 0})", "df.dropna(subset=['quantity'])", "df.filter(col('quantity') == 0)", "df.replace(None)"],
+ "fillna (na.fill) replaces nulls. dropna removes the rows instead.", "pyspark"],
+[3, "`price` arrives as a string. Which code standardizes it to a decimal type in silver?",
+ ["df.withColumn('price', col('price').cast('decimal(10,2)'))", "df.withColumnRenamed('price', 'decimal')", "df.select(explode('price'))", "df.fillna({'price': 'decimal'})"],
+ "cast changes a column's data type.", "pyspark"],
+[3, "Two DataFrames must be joined where both `store_id` and `sale_date` match. Which code?",
+ ["a.join(b, ['store_id', 'sale_date'])", "a.join(b, 'store_id').join(b, 'sale_date')", "a.crossJoin(b)", "a.union(b)"],
+ "Pass a list of column names to join on multiple keys.", "pyspark"],
+
+// ---------- S4 Lakeflow Jobs ----------
+[4, "Task B depends on task A, and nobody changed B's settings. When does B run?",
+ ["Only if A succeeds (Run if = All succeeded)", "Whenever A finishes, success or failure", "Only if A fails", "At the same time as A"],
+ "The default Run if condition is All succeeded.", "runif"],
+[4, "Task B depends on A with the default Run if condition. A fails. What status does B show?",
+ ["Upstream failed", "Excluded", "Skipped", "Timed Out"],
+ "When a task's condition isn't met because of an upstream failure, it shows Upstream failed.", "runif"],
+[4, "A cleanup task must run after its upstream tasks finish, whether they succeeded or failed. Which Run if condition?",
+ ["All done", "All succeeded", "At least one failed", "None failed"],
+ "All done runs once every dependency has finished, whatever the result.", "runif"],
+[4, "A notification task has Run if = 'At least one failed'. All its upstream tasks succeed. What status does it show?",
+ ["Excluded", "Upstream failed", "Succeeded", "Timed Out"],
+ "A task whose Run if condition isn't met because upstream tasks succeeded is shown as Excluded.", "runif"],
+[4, "A new job is created with default settings. What is its maximum number of concurrent runs?",
+ ["1", "5", "10", "Unlimited"],
+ "Maximum concurrent runs defaults to 1.", "cfg"],
+[4, "Queueing is on for a job (the default for jobs created in the UI since April 2024). How long can a run wait in the queue?",
+ ["Up to 48 hours", "Up to 1 hour", "Up to 7 days", "There's no limit"],
+ "Queued runs wait up to 48 hours.", "cfg"],
+[4, "A For each task was created with default settings. How many iterations run at once?",
+ ["1", "5", "10", "All of them"],
+ "For each concurrency defaults to 1, so iterations run one after another. Raise it to run them in parallel.", "foreach"],
+[4, "Which statement about For each tasks is correct?",
+ ["A For each task can't contain another For each task", "A For each task can only loop over integers", "Each iteration needs its own job", "For each tasks can't receive parameters"],
+ "For each tasks can't be nested. The nested task reads the current item with {{input}} or {{input.<key>}}.", "foreach"],
+[4, "Inside a For each task's nested notebook task, how do you refer to the current item?",
+ ["{{input}}", "{{job.id}}", "{{item.value}}", "$ITEM"],
+ "Use {{input}}, or {{input.<key>}} for a field of a JSON object.", "foreach"],
+[4, "A task normally takes 20 minutes. The team wants an alert if it passes 30 minutes, but the task must keep running. What should they set?",
+ ["A duration warning threshold of 30 minutes", "A timeout of 30 minutes", "Retries set to 30", "Max concurrent runs of 30"],
+ "A duration warning threshold alerts but doesn't stop the run. A timeout stops it.", "cfg"],
+[4, "A task has a 30-minute timeout and runs for 31 minutes. What happens?",
+ ["The run is stopped and the task shows Timed Out", "An alert is sent and the task keeps running", "The task is retried forever", "Nothing, timeouts only apply to clusters"],
+ "A timeout ends the task, which shows Timed Out.", "cfg"],
+[4, "How often does a file arrival trigger check for new files?",
+ ["About every minute", "Every second", "Every 15 minutes", "Only when the job is run manually"],
+ "File arrival triggers check roughly every minute.", "fat"],
+[4, "A file arrival trigger monitors a location that doesn't have file events enabled. What limit applies?",
+ ["The location can hold at most 10,000 files", "There's no limit", "Only one file can arrive per hour", "Only DBFS paths are allowed"],
+ "Without file events: up to 10,000 files in the location and at most 50 such jobs per workspace. With file events there's no file limit.", "fat"],
+[4, "Which locations can a file arrival trigger monitor?",
+ ["A Unity Catalog external location or volume", "Any HTTP URL", "Only DBFS root", "A local folder on the driver"],
+ "File arrival triggers watch UC external locations or volumes.", "fat"],
+[4, "A table update trigger watches several tables. How many tables can one trigger monitor?",
+ ["Up to 10", "Only 1", "Up to 100", "Unlimited"],
+ "A table update trigger can watch up to 10 tables, firing when Any or All of them update.", "tut"],
+[4, "Another team writes to a source table in bursts of many small commits. The job should start once, after a burst ends. Which setting?",
+ ["Wait after last change", "Minimum time between triggers", "Max concurrent runs", "Retry interval"],
+ "Wait after last change waits until updates stop; each new update resets the timer.", "tut"],
+[4, "A table update trigger fires, and the job must not start again until 1 hour after the previous run finishes. Which setting?",
+ ["Minimum time between triggers", "Wait after last change", "Duration warning threshold", "Timeout"],
+ "Minimum time between triggers sets a gap after the previous run.", "tut"],
+[4, "A job's trigger is paused while a run is in progress. What happens?",
+ ["The current run continues; no new runs start", "The current run is cancelled", "The current run is queued", "The job is deleted"],
+ "Pausing stops new runs only.", "trig"],
+[4, "Data from a vendor lands at unpredictable times. The job should run as soon as files arrive. Which trigger?",
+ ["File arrival", "Scheduled", "Continuous", "Manual"],
+ "Data-driven triggers (file arrival, table update) fit data that arrives at unpredictable times.", "trig"],
+[4, "A finance report must run at 07:00 every weekday, regardless of data changes. Which trigger?",
+ ["Scheduled", "File arrival", "Table update", "Continuous"],
+ "Time-based schedules fit fixed delivery times.", "trig"],
+[4, "Which statement about continuous jobs is correct?",
+ ["A new run starts when the previous one ends, and failures are retried with exponential backoff", "They run once and stop", "They need a file arrival trigger", "They can't use retries"],
+ "Continuous jobs keep one run active and retry automatically with exponential backoff.", "cf"],
+[4, "Workflow logic must run task B when a value is above a threshold and task C otherwise. Which task type?",
+ ["If/else condition", "For each", "Run job", "Dashboard"],
+ "If/else condition tasks branch on a boolean expression.", "cf"],
+[4, "A new production job runs notebook tasks and serverless is enabled. What compute does a task get by default?",
+ ["Serverless compute for jobs", "A shared all-purpose cluster", "A SQL warehouse", "The driver of the last cluster used"],
+ "Serverless is the default for tasks that support it. All-purpose compute isn't recommended for production jobs.", "jc"],
+[4, "A task fails because of a brief network glitch. What job setting re-runs it automatically?",
+ ["Retries", "Max concurrent runs", "Duration warning threshold", "Queueing"],
+ "Retries set how many times a failed task is re-run.", "cf"],
+
+// ---------- S5 CI/CD ----------
+[5, "`databricks.yml` has targets dev (`default: true`), staging and prod. What does `databricks bundle deploy` with no `-t` use?",
+ ["dev", "prod", "The first target in the file", "Nothing; the command fails"],
+ "The target marked default: true is used when -t is left out. Only one target can be the default.", "bset"],
+[5, "Which top-level mapping loads job definitions from `resources/*.yml` into the bundle?",
+ ["include", "targets", "variables", "artifacts"],
+ "include lists more config files (globs allowed) to merge into the bundle.", "bset"],
+[5, "Which setting is required in every bundle configuration?",
+ ["bundle: name:", "targets: prod:", "workspace: host:", "include:"],
+ "bundle.name is the one required top-level setting.", "bset"],
+[5, "A job's cluster size is set at top level and also under `targets: prod:`. Which value does a prod deploy use?",
+ ["The prod target's value", "The top-level value", "The larger of the two", "The deploy fails with a conflict"],
+ "A target's settings override top-level settings with the same key.", "bset"],
+[5, "A variable `catalog` has a default, a target value, and the deploy runs with `--var=\"catalog=qa\"`. Which value is used?",
+ ["qa", "The target value", "The default", "The BUNDLE_VAR_catalog value if one exists"],
+ "Precedence: --var, then BUNDLE_VAR_ env var, then variable-overrides.json, then target variables, then default.", "bvar"],
+[5, "How can a CI system set the bundle variable `catalog` without editing files?",
+ ["Set the environment variable BUNDLE_VAR_catalog", "Set DATABRICKS_CATALOG", "Edit .databrickscfg", "Use databricks bundle set catalog"],
+ "BUNDLE_VAR_<name> environment variables set bundle variables.", "bvar"],
+[5, "A job needs the ID of a warehouse named 'Analytics WH', which differs in every workspace. Which bundle feature?",
+ ["A variable with lookup: warehouse:", "A hard-coded ID per target", "mode: development", "include:"],
+ "lookup resolves an object's name to its ID at deploy time.", "bvar"],
+[5, "A target uses `mode: development`. What happens to deployed resource names?",
+ ["They get a [dev <username>] prefix", "They get a _prod suffix", "Nothing changes", "They're replaced with random IDs"],
+ "Development mode prefixes names, pauses schedules and triggers, and marks pipelines as development.", "bdm"],
+[5, "In `mode: development`, what happens to job schedules and triggers by default?",
+ ["They're paused", "They run normally", "They're deleted", "They run every minute"],
+ "Development mode pauses schedules and triggers. Set pause_status: UNPAUSED to run one.", "bdm"],
+[5, "A developer wants one job's schedule to run in their `mode: development` deployment. What should they set?",
+ ["pause_status: UNPAUSED on that schedule", "mode: production", "default: true", "max_concurrent_runs: 1"],
+ "An explicit pause_status: UNPAUSED overrides development mode's pausing for that resource.", "bdm"],
+[5, "A target has `mode: production` and `git: branch: main`. The engineer deploys from a feature branch. What happens?",
+ ["Validation fails because the branch doesn't match, unless --force is used", "The deploy succeeds and pauses schedules", "The CLI switches the branch to main", "Resources get a [dev] prefix"],
+ "Production mode checks the current Git branch against the target's.", "bdm"],
+[5, "Which identity does Databricks recommend for `run_as` in a production bundle target?",
+ ["A service principal", "The developer's own user", "The workspace admin", "An anonymous user"],
+ "Production mode recommends running as a service principal.", "bdm"],
+[5, "Which command checks a bundle's configuration for errors without deploying anything?",
+ ["databricks bundle validate", "databricks bundle deploy --dry", "databricks bundle run", "databricks bundle destroy"],
+ "validate checks the configuration. deploy, run and destroy act on the workspace.", "bun"],
+[5, "Which command removes the jobs, pipelines and files a bundle deployed to a target?",
+ ["databricks bundle destroy -t <target>", "databricks bundle delete", "databricks bundle validate --clean", "databricks workspace rm"],
+ "bundle destroy removes the deployed resources for that target.", "bun"],
+[5, "What is the current name for Databricks Repos?",
+ ["Databricks Git folders", "Databricks Projects", "Lakeflow Repos", "Workspace Git"],
+ "Repos are now Git folders. You create and switch branches, commit, push and open pull requests from the workspace UI.", "git"],
+[5, "What is the current name for Databricks Asset Bundles?",
+ ["Declarative Automation Bundles", "Lakeflow Bundles", "Databricks Deploy Packs", "Unity Bundles"],
+ "The rename didn't change the CLI: commands are still databricks bundle ...", "bun"],
+
+// ---------- S6 Optimize & troubleshoot ----------
+[6, "In the Spark UI, a stage's median task time is 15 seconds and the maximum is 12 minutes. Shuffle read size shows the same pattern. What is the likely cause?",
+ ["Data skew: a few partitions are far bigger than the rest", "Too many executors", "The driver is out of memory", "Photon is turned off"],
+ "A max far above the median in task time and shuffle read is the signature of skew.", "aqe"],
+[6, "A stage shows a large 'Spill (Disk)' value. What does that indicate?",
+ ["Partitions didn't fit in executor memory and were written to disk", "The output table is too small", "The cluster has too few drivers", "The checkpoint is corrupted"],
+ "Spill means data didn't fit in memory. More, smaller partitions or more memory reduce it. (Spark UI behavior; check the Spark UI docs.)", "aqe"],
+[6, "A notebook calls `df.collect()` on a 200 GB DataFrame and fails with an out-of-memory error. Where did memory run out?",
+ ["On the driver", "On the SQL warehouse", "In the Delta log", "In cloud storage"],
+ "collect() brings every row to the driver. Write the result to a table or use limit() instead.", "pyspark"],
+[6, "What is the maximum number of liquid clustering keys on a table?",
+ ["4", "1", "8", "32"],
+ "CLUSTER BY accepts up to 4 columns.", "lc"],
+[6, "Clustering keys on a table are changed with `ALTER TABLE ... CLUSTER BY (region, order_date)`. What happens to existing data?",
+ ["Nothing until OPTIMIZE ... FULL reclusters it", "It's rewritten immediately", "It's deleted", "It's converted to partitions"],
+ "Changing keys affects new writes and later OPTIMIZE runs. OPTIMIZE FULL reclusters everything.", "lc"],
+[6, "Which statement about liquid clustering is correct?",
+ ["It can't be combined with partitioning or ZORDER", "It needs ZORDER to work", "It only works on external tables", "It requires at least 4 keys"],
+ "Liquid clustering replaces partitioning and ZORDER for the table.", "lc"],
+[6, "A team wants Databricks to choose and adjust clustering keys automatically. Which clause?",
+ ["CLUSTER BY AUTO", "CLUSTER BY NONE", "ZORDER BY AUTO", "PARTITIONED BY AUTO"],
+ "CLUSTER BY AUTO lets Databricks pick keys. CLUSTER BY NONE removes clustering.", "lc"],
+[6, "Which tables can predictive optimization maintain?",
+ ["Unity Catalog managed tables only", "External tables only", "All tables, including Hive metastore", "Only streaming tables"],
+ "Predictive optimization works on UC managed tables.", "po"],
+[6, "Which operations does predictive optimization run automatically?",
+ ["OPTIMIZE, VACUUM and ANALYZE", "ZORDER only", "VACUUM and RESTORE", "OPTIMIZE FULL only"],
+ "It runs OPTIMIZE (without ZORDER), VACUUM and ANALYZE on serverless compute.", "po"],
+[6, "At which levels can predictive optimization be enabled, disabled or inherited?",
+ ["Catalog, schema or table", "Cluster only", "Notebook only", "Column only"],
+ "Use ENABLE, DISABLE or INHERIT on a catalog, schema or table.", "po"],
+[6, "An all-purpose cluster terminated 5 weeks ago has disappeared from the compute list. Nobody deleted it. Why?",
+ ["Terminated compute is deleted 30 days after termination unless it's pinned", "Auto-termination deletes clusters immediately", "Predictive optimization removed it", "Serverless replaced it"],
+ "Pin a cluster (up to 100) to keep its configuration.", "cm"],
+[6, "A job's runs have been getting slower over two weeks. Where do you compare durations against the baseline?",
+ ["The job's run history in the Lakeflow Jobs UI", "The cluster's event log only", "Catalog Explorer lineage", "The Git folder history"],
+ "The Jobs run history shows each run's duration and status over time, so trends stand out.", "cfg"],
+
+// ---------- S7 Governance ----------
+[7, "A data engineer creates a table. Nobody changes anything afterwards. Who owns it?",
+ ["The engineer who created it", "The schema owner", "The metastore admin", "Nobody until assigned"],
+ "The creator owns a new object.", "perm"],
+[7, "`GRANT SELECT ON SCHEMA main.sales TO analysts` is run. A new table is added to main.sales next week. Does the grant cover it?",
+ ["Yes; schema grants apply to existing and future tables", "No; it only covers tables that existed at grant time", "Only after a metastore admin refreshes grants", "Only if the table owner opts in"],
+ "Privileges granted on a catalog or schema are inherited by current and future child objects.", "perm"],
+[7, "What does a user need to read `main.sales.orders`?",
+ ["USE CATALOG on main, USE SCHEMA on main.sales, and SELECT on the table", "SELECT on the table only", "USE CATALOG and SELECT only", "MODIFY on the table"],
+ "All three are required: USE CATALOG, USE SCHEMA and SELECT.", "perm"],
+[7, "A data steward must grant and revoke access on a catalog without being able to read its data. Which privilege?",
+ ["MANAGE", "ALL PRIVILEGES", "Ownership", "SELECT"],
+ "MANAGE lets you grant, revoke, transfer and drop without data access. Several principals can hold it.", "perm"],
+[7, "An admin wants to stop one group reading a table it was granted. In Unity Catalog SQL, what do they use?",
+ ["REVOKE SELECT ON TABLE t FROM group", "DENY SELECT ON TABLE t TO group", "DROP GRANT", "ALTER TABLE t DENY"],
+ "SQL DENY isn't supported in Unity Catalog (only in the legacy Hive metastore). Use REVOKE.", "deny"],
+[7, "Which statement grants read access on a table to a group?",
+ ["GRANT SELECT ON TABLE main.sales.orders TO `analysts`", "GRANT READ ON main.sales.orders FOR analysts", "ALLOW SELECT main.sales.orders analysts", "SET PERMISSION SELECT TO analysts"],
+ "GRANT <privilege> ON <securable> TO <principal>. Backticks quote group names.", "perm"],
+[7, "A managed table is dropped. What happens to its data?",
+ ["It is deleted, but the table can be recovered with UNDROP for 7 days by default", "The files stay in place forever", "It moves to an external location", "It's deleted immediately with no recovery"],
+ "Dropping a managed table removes data after the UNDROP window, which defaults to 7 days.", "managed"],
+[7, "An external table is dropped. What happens to its data files?",
+ ["They stay in the external location; only the metadata is removed", "They are deleted after 7 days", "They are deleted immediately", "They move to managed storage"],
+ "Dropping an external table removes only the table definition.", "managed"],
+[7, "A managed table was dropped 3 days ago with default settings. How can it be recovered?",
+ ["UNDROP TABLE", "RESTORE TABLE ... VERSION AS OF", "CREATE TABLE ... CLONE", "It can't be recovered"],
+ "UNDROP works within the retention window, 7 days by default.", "undrop"],
+[7, "Which command converts an external table to a managed table?",
+ ["ALTER TABLE ... SET MANAGED", "CONVERT TO DELTA", "ALTER TABLE ... UNSET EXTERNAL", "CREATE TABLE ... AS SELECT only"],
+ "SET MANAGED converts an external table to managed. UNSET MANAGED undoes it within 14 days.", "conv"],
+[7, "A table was converted with `SET MANAGED` 9 days ago. Can the conversion be undone?",
+ ["Yes, with UNSET MANAGED within 14 days, on serverless or DBR 17.3 LTS+", "No, conversion is permanent", "Yes, within 90 days", "Only by dropping and recreating the table"],
+ "UNSET MANAGED rolls back within 14 days.", "conv"],
+[7, "A column mask must show real values only to members of the account group `pii_readers`, including nested members. Which function?",
+ ["is_account_group_member('pii_readers')", "current_user() = 'pii_readers'", "session_user() LIKE '%pii%'", "current_catalog() = 'pii_readers'"],
+ "is_account_group_member checks account-level group membership.", "fm"],
+[7, "Users in the EU group should only see rows where `region = 'EU'`. Which feature?",
+ ["A row filter function on the table", "A column mask", "A view with DENY", "A separate catalog per user"],
+ "Row filters restrict which rows a query returns. Column masks change the values in a column.", "fm"],
+[7, "The `ssn` column must show '***' to everyone except the HR group. Which feature?",
+ ["A column mask", "A row filter", "REVOKE SELECT on the column", "Liquid clustering"],
+ "A column mask is a SQL function that replaces a column's values based on who is querying.", "fm"],
+[7, "At which levels can ABAC row filter and column mask policies be attached?",
+ ["Catalog, schema or table (metastore level is in Beta)", "Column only", "Workspace only", "Cluster policy level"],
+ "ABAC policies are attached at catalog, schema or table level.", "abac"],
+[7, "A governance team wants one policy to mask every column tagged 'pii' across a catalog. What do ABAC policies match on?",
+ ["Governed tags", "Column names", "Table owners", "File paths"],
+ "ABAC policies match governed tags and apply automatically to every tagged object in scope.", "abac"],
+[7, "A privilege is granted at the metastore level. Does it pass down to tables?",
+ ["No; metastore-level grants don't pass down to data objects", "Yes, to every table", "Only to managed tables", "Only to views"],
+ "Inheritance flows from catalogs and schemas, not from the metastore.", "perm"],
+];
+
+// Batch 2. Appended after batch 1 so saved progress (keyed by position) stays valid.
+Object.assign(LINKS, {
+  cdc: DOC + "ldp/cdc",
+  tv: DOC + "jobs/task-values",
+  params: DOC + "jobs/parameters",
+  gitops: DOC + "repos/git-operations-with-repos",
+  pmode: DOC + "ldp/pipeline-mode",
+  upd: DOC + "ldp/updates",
+  upload: DOC + "ingestion/create-or-modify-table",
+});
+
+BANK.push(
+// ---------- S1 Platform ----------
+[1, "A Delta table uses default retention settings. Can you reliably time travel to a version from 20 days ago?",
+ ["No: the history entry still exists, but VACUUM may have removed that version's data files after 7 days", "Yes: history is kept for 30 days, so any version in that window works", "Yes: time travel has no limit on managed tables", "No: history is only kept for 24 hours"],
+ "Time travel needs both the log (30 days) and the data files (7 days). Practical time travel is about 7 days unless you raise both settings.", "hist"],
+[1, "A team wants a managed Iceberg table in Unity Catalog. What must they add to `CREATE TABLE`?",
+ ["USING iceberg", "LOCATION 's3://...'", "TBLPROPERTIES ('format' = 'iceberg') only", "Nothing, Iceberg is the default"],
+ "Delta is the default format. Iceberg needs an explicit USING iceberg.", "managed"],
+[1, "A new SQL warehouse is created and serverless is enabled for the account. What type is it by default?",
+ ["Serverless", "Pro", "Classic", "Dedicated"],
+ "The default is serverless if it's enabled for the account.", "wh"],
+[1, "A new SQL warehouse is created with default sizing and scaling. What are its cluster count settings?",
+ ["Minimum 1, maximum 1", "Minimum 1, maximum 10", "Minimum 0, maximum 5", "Minimum 2, maximum 2"],
+ "The defaults are size X-Large with min 1 and max 1 cluster.", "wh"],
+[1, "A data scientist needs to run R notebooks. Which access mode must the compute use?",
+ ["Dedicated", "Standard", "Shared no isolation", "Serverless SQL"],
+ "R is supported only in Dedicated (formerly Single user) access mode.", "ccfg"],
+[1, "What privilege does `RESTORE TABLE` need on the table?",
+ ["MODIFY", "SELECT only", "MANAGE", "USE SCHEMA only"],
+ "RESTORE rewrites table state, so it needs MODIFY.", "hist"],
+[1, "How many all-purpose compute resources can be pinned so they aren't deleted 30 days after termination?",
+ ["Up to 100", "Up to 10", "Unlimited", "Only 1 per user"],
+ "Pinning keeps the configuration. Up to 100 can be pinned.", "cm"],
+
+// ---------- S2 Ingestion ----------
+[2, "What is the current name for the pipeline API that used to be called `APPLY CHANGES`?",
+ ["AUTO CDC", "MERGE STREAM", "CHANGE FEED INTO", "APPLY UPSERTS"],
+ "The AUTO CDC APIs replace APPLY CHANGES with the same syntax. The old names still work.", "cdc"],
+[2, "A source database has no CDC feed; you only get a full snapshot each day. Which pipeline API turns snapshots into changes?",
+ ["AUTO CDC FROM SNAPSHOT", "AUTO CDC", "COPY INTO", "Auto Loader with rescue mode"],
+ "AUTO CDC FROM SNAPSHOT compares in-order snapshots to infer inserts, updates and deletes.", "cdc"],
+[2, "In an `AUTO CDC` flow, what is `SEQUENCE BY` (Python: `sequence_by`) used for?",
+ ["Ordering change events so the latest change for each key wins", "Choosing the primary key", "Partitioning the target table", "Setting the refresh schedule"],
+ "KEYS identifies the record; SEQUENCE BY orders the changes. NULL sequencing values aren't supported.", "cdc"],
+[2, "An `AUTO CDC` SCD type 1 target receives an update with sequence 5 after the update with sequence 6 has already been applied. What happens?",
+ ["The older update (sequence 5) is ignored", "It overwrites the newer value", "The pipeline fails", "Both versions are kept"],
+ "Changes are ordered by the sequencing column, so a late, older event doesn't overwrite a newer one.", "cdc"],
+[2, "In an SCD type 2 table built by `AUTO CDC`, how do you find the current version of each record?",
+ ["Rows where __END_AT is null", "Rows where __START_AT is null", "The row with the lowest sequence value", "Rows where _rescued_data is null"],
+ "Records with __END_AT = null are currently active.", "cdc"],
+[2, "A CDC feed marks deletes with `operation = 'DELETE'`. How does an `AUTO CDC` flow apply them?",
+ ["APPLY AS DELETE WHEN operation = 'DELETE' (Python: apply_as_deletes)", "They are applied automatically with no setting", "WHERE operation != 'DELETE'", "A separate VACUUM step"],
+ "Deletes are only handled when you specify the delete condition.", "cdc"],
+[2, "An `AUTO CDC` SCD type 2 target should not create new versions when only `last_login` changes. Which option?",
+ ["TRACK HISTORY ON * EXCEPT (last_login)", "STORED AS SCD TYPE 1", "SEQUENCE BY last_login", "KEYS (last_login)"],
+ "By default SCD type 2 creates a version whenever any column changes. Exclude columns from history tracking.", "cdc"],
+[2, "A new Lakeflow Connect managed ingestion pipeline runs for the first time. What does it ingest?",
+ ["All of the selected data from the source; later runs ingest only changes where the source supports it", "Only rows changed in the last 24 hours", "Only the schema, with no data", "Nothing until a CDC feed is enabled"],
+ "The first run is a full load. After that it uses change tracking to ingest only changed data, when possible.", "lfc"],
+[2, "Which component do Lakeflow Connect database (CDC) connectors use that SaaS connectors don't?",
+ ["An ingestion gateway and staging storage", "A SQL warehouse", "An all-purpose cluster", "An Auto Loader checkpoint"],
+ "Database connectors extract changes through a gateway into staging storage. SaaS connectors don't need one.", "lfc"],
+[2, "How does Lakeflow Connect run a managed ingestion pipeline on a schedule?",
+ ["It creates a Lakeflow Job, with the ingestion pipeline as a task", "Through a cron entry on the driver", "Through a file arrival trigger only", "It can't be scheduled"],
+ "Lakeflow Connect creates a job for each schedule you add.", "lfc"],
+[2, "A managed connector pipeline hits a temporary source error. What does it do?",
+ ["Retries automatically with exponential backoff, keeping its cursor position", "Fails and restarts from a full load", "Skips the batch permanently", "Waits for a manual restart"],
+ "Failures are retried with exponential backoff, and the connector stores its cursor so it can resume.", "lfc"],
+[2, "In Lakeflow Connect, what kind of object is a connection?",
+ ["A Unity Catalog securable", "A workspace secret scope", "A cluster policy", "A bundle variable"],
+ "Each connector uses a connection (a UC securable), an ingestion pipeline and destination tables.", "lfc"],
+[2, "No managed connector exists for a source. Which Lakeflow Connect alternatives does Databricks describe?",
+ ["SQL/Spark APIs, community connectors, or custom connectors", "Only Auto Loader", "Only COPY INTO", "Nothing; the source can't be ingested"],
+ "SQL and Spark APIs trade some automation for broader source support. Community and custom connectors cover the rest.", "lfc"],
+[2, "An Auto Loader stream with a provided schema (mode `none`) should still capture unexpected data. What must be set?",
+ ["rescuedDataColumn", "cloudFiles.inferColumnTypes", "cloudFiles.schemaHints", "mergeSchema"],
+ "In none mode, data is only rescued if you set the rescuedDataColumn option.", "als"],
+[2, "`cloudFiles.maxBytesPerTrigger` is set to 1 GB, but one micro-batch read 1.3 GB. Why?",
+ ["The byte limit is a soft limit", "The setting was ignored because a file limit wasn't set", "Auto Loader doubled the limit for a backlog", "It is a bug"],
+ "maxBytesPerTrigger is soft, so a batch can go over it. maxFilesPerTrigger is hard.", "alp"],
+[2, "Auto Loader infers a schema from Parquet files where `amount` is INT in some files and BIGINT in others. What type is inferred?",
+ ["BIGINT, the widest type", "INT, the first type seen", "STRING", "It fails"],
+ "For Parquet, Auto Loader chooses the widest type when files disagree.", "als"],
+[2, "Why does Databricks recommend running an Auto Loader stream that uses `addNewColumns` in a Lakeflow Job with retries?",
+ ["The stream stops when a new column appears, and a retry restarts it with the updated schema", "Retries make inference faster", "Jobs are required for Auto Loader", "Retries stop the schema from changing"],
+ "addNewColumns stops the stream with UnknownFieldException on purpose. An automatic restart picks up the new schema.", "als"],
+[2, "`COPY INTO ... VALIDATE` is run with no row count. How many rows does it check?",
+ ["All rows", "The first 1,000 rows", "The first 50 rows", "None; it only checks the schema"],
+ "VALIDATE with no row count validates all the data.", "copy"],
+[2, "`COPY INTO` reads from a path that no Unity Catalog external location covers. How can it authenticate?",
+ ["With an inline CREDENTIAL clause", "With READ FILES on the table", "It can't read the path", "With a bundle variable"],
+ "Inline credentials are for paths with no external location. Otherwise READ FILES on the external location is used.", "copy"],
+[2, "A CSV is uploaded through the Create or modify table file upload UI with default settings. How is it parsed?",
+ ["First row as header, comma as delimiter", "No header, tab as delimiter", "No header, comma as delimiter", "First row as header, pipe as delimiter"],
+ "The upload UI defaults to a header row and comma delimiter. It accepts up to 10 files totalling under 2 GB.", "upload"],
+
+// ---------- S3 Transform & pipelines ----------
+[3, "A new Lakeflow pipeline is created without changing the pipeline mode. Which mode does it use?",
+ ["Triggered", "Continuous", "Streaming", "Development only"],
+ "Triggered is the default: it refreshes all tables from the data available at the start and then stops.", "pmode"],
+[3, "Which statement about triggered vs continuous pipeline mode is correct?",
+ ["Continuous keeps compute running for lower latency at higher cost; triggered stops after each update", "Triggered mode needs an always-running cluster", "Only continuous mode supports materialized views", "Continuous mode refreshes once a day"],
+ "Triggered uses less compute; continuous processes data as it arrives.", "pmode"],
+[3, "`pipelines.trigger.interval` is set on a triggered pipeline. What effect does it have?",
+ ["None; it only applies to continuous pipelines", "It sets the schedule", "It limits rows per update", "It sets the retry interval"],
+ "The trigger interval is used only with continuous pipelines.", "pmode"],
+[3, "A pipeline runs from a continuous Lakeflow Job, but its pipeline mode is set to triggered. Which wins?",
+ ["The job: it sets the execution mode and takes precedence", "The pipeline mode setting", "Whichever was changed most recently", "The run fails with a conflict"],
+ "Databricks recommends running continuous pipelines through a continuous job, which takes precedence over the pipeline's mode.", "pmode"],
+[3, "What does a full refresh of a streaming table do?",
+ ["Clears its data and checkpoints, then reprocesses all records from the source", "Processes only new records", "Recomputes only the last day", "Deletes the table definition"],
+ "A full refresh resets all state. A normal refresh processes only new records.", "upd"],
+[3, "A streaming table reads from Kafka with 7-day retention. Why is a full refresh risky?",
+ ["Records no longer in the source are dropped from the target", "It duplicates every record", "It converts the table to a view", "It turns off expectations"],
+ "A full refresh reprocesses only what the source still holds.", "upd"],
+[3, "How do you stop anyone from running a full refresh on a particular streaming table?",
+ ["Set the table property pipelines.reset.allowed = false", "Set the pipeline to continuous mode", "Revoke SELECT on the table", "Set spark.sql.shuffle.partitions = 0"],
+ "pipelines.reset.allowed = false blocks full refreshes for that table.", "upd"],
+[3, "An engineer wants to catch wrong table or column names in a pipeline without writing any data. What should they run?",
+ ["A validate update (dry run)", "A full refresh", "Refresh failed tables", "OPTIMIZE"],
+ "A dry run resolves the dataset and flow definitions but doesn't materialize or publish anything.", "upd"],
+[3, "A pipeline update is started with Run now in the UI (non-continuous). Which behavior applies?",
+ ["The cluster is reused and pipeline retries are disabled, for fast debugging", "The cluster shuts down immediately and errors are retried", "A full refresh runs", "The pipeline switches to continuous mode"],
+ "Ad-hoc UI runs favor fast restarts and immediate errors. Job-triggered updates retry and shut the cluster down after the run.", "upd"],
+[3, "A pipeline update is triggered by a Lakeflow Job. Which behavior applies?",
+ ["Recoverable errors are retried and the cluster shuts down right after the run", "The cluster stays up for two hours", "Retries are disabled", "Only failed tables are refreshed"],
+ "Job and API-triggered updates use automatic retry and restart.", "upd"],
+[3, "'Refresh failed tables' is used after a partial failure. What gets refreshed?",
+ ["The failed tables plus their downstream dependencies", "Every table in the pipeline", "Only tables that succeeded", "Only materialized views"],
+ "Excluded tables are not refreshed, even if they depend on a failed table.", "upd"],
+[3, "A standalone materialized view (created in Databricks SQL) is refreshed. Which mode does the refresh use?",
+ ["Always triggered", "Always continuous", "Whatever the warehouse is set to", "Development mode"],
+ "Standalone materialized view and streaming table refreshes always use triggered mode.", "pmode"],
+[3, "Which pipeline object does a normal (not full) refresh update incrementally when that's more efficient, and otherwise recompute?",
+ ["Materialized view", "View", "Temporary view", "External table"],
+ "Materialized views use incremental refresh when it's cheaper; results match a full recompute.", "upd"],
+[3, "A 50 GB fact table joins a 5 MB lookup table. AQE is off. Which side should get a broadcast hint?",
+ ["The 5 MB lookup table", "The 50 GB fact table", "Both", "Neither; hints are ignored"],
+ "Broadcast the small side so the large table isn't shuffled.", "hints"],
+[3, "A job on a small dataset produces 200 tiny shuffle tasks per stage. Which change helps directly?",
+ ["Set spark.sql.shuffle.partitions to auto, or let AQE coalesce partitions", "Raise spark.sql.shuffle.partitions to 2,000", "Turn off AQE", "Add more drivers"],
+ "200 is the default. AQE coalesces small partitions, and auto lets Databricks size them.", "aqe"],
+[3, "Find customers who have never placed an order. Which join type returns only the customers with no match?",
+ ["left_anti", "left_semi", "inner", "cross"],
+ "A left anti join keeps left rows with no match. A left semi join keeps left rows that do match.", "join"],
+[3, "Find customers who have at least one order, without adding any order columns. Which join type?",
+ ["left_semi", "left_anti", "full_outer", "cross"],
+ "A left semi join returns left rows that have a match and only the left columns.", "join"],
+[3, "Average order amount per region in PySpark?",
+ ["df.groupBy('region').agg(avg('amount'))", "df.select(avg('amount')).groupBy('region')", "df.agg('region', avg('amount'))", "df.groupBy(avg('amount'))"],
+ "groupBy returns grouped data; agg applies aggregate functions to each group.", "pyfn"],
+[3, "Rows where `email` is null must be removed. Which code?",
+ ["df.filter(col('email').isNotNull())", "df.filter(col('email') != None)", "df.fillna({'email': ''})", "df.drop('email')"],
+ "Use isNotNull(). Comparing with None using != doesn't work as a null check. dropna(subset=['email']) also works.", "pyspark"],
+[3, "Keep only the latest record per `customer_id` by `updated_at`. Which approach?",
+ ["row_number() over a window partitioned by customer_id ordered by updated_at desc, then keep row 1", "dropDuplicates(['updated_at'])", "distinct()", "groupBy('customer_id').count()"],
+ "A window with row_number lets you pick exactly one row per key by an ordering column.", "pyfn"],
+[3, "Which SQL operator combines two result sets and removes duplicate rows?",
+ ["UNION", "UNION ALL", "JOIN", "CROSS JOIN"],
+ "UNION removes duplicates; UNION ALL keeps them.", "join"],
+[3, "Which Python decorator defines a materialized view in a Lakeflow pipeline?",
+ ["@dp.materialized_view", "@dp.view_table", "@dlt.stream", "@dp.expect"],
+ "Use @dp.materialized_view for a materialized view. @dp.table is the decorator for tables such as streaming tables.", "dlt"],
+[3, "A gold aggregate is shown on a BI dashboard and must reflect late corrections to silver. Which object fits better than a streaming table?",
+ ["Materialized view", "Streaming table with append flow", "Temporary view", "Volume"],
+ "Streaming tables assume append-only input. Materialized views stay correct when sources are updated.", "ldp"],
+
+// ---------- S4 Lakeflow Jobs ----------
+[4, "A notebook task must pass a computed row count to a downstream task. Which call sets it?",
+ ["dbutils.jobs.taskValues.set(key='row_count', value=n)", "dbutils.widgets.set('row_count', n)", "spark.conf.set('row_count', n)", "dbutils.notebook.exit(n) only"],
+ "Task values pass small results between tasks. Keys must be strings and values must be valid JSON.", "tv"],
+[4, "What is the recommended way for a downstream task to read the task value `row_count` set by task `ingest`?",
+ ["A task parameter with the dynamic reference {{tasks.ingest.values.row_count}}", "dbutils.jobs.taskValues.get with a default value", "Reading a temp file on the driver", "A global Spark config"],
+ "Databricks recommends dynamic value references. They work in any task type that takes parameters.", "tv"],
+[4, "What is the size limit for one task value?",
+ ["48 KiB as JSON", "1 MB", "16 KB", "No limit"],
+ "The JSON representation of the value can't exceed 48 KiB.", "tv"],
+[4, "Which task types can call `dbutils.jobs.taskValues.set`?",
+ ["Python notebooks", "SQL queries", "Dashboards", "Any task type"],
+ "set and get are Python functions. Dynamic value references can read task values from any task that takes parameters.", "tv"],
+[4, "Why does Databricks not recommend default values in `taskValues.get`?",
+ ["They can hide a missing key or a wrong task name", "They slow the job down", "They aren't supported", "They overwrite the upstream value"],
+ "A default makes the task succeed with the wrong value instead of failing visibly.", "tv"],
+[4, "A user wants to run a job once with a different `start_date` without editing the job. How?",
+ ["Run now with different parameters", "Edit the task's static parameter", "Create a new job", "Change the notebook's widget default"],
+ "Job parameters can be overridden for a manual run or through the REST API.", "params"],
+[4, "How does a notebook task read a job parameter?",
+ ["Through dbutils.widgets", "Through sys.argv", "Through spark.conf", "Through taskValues.get"],
+ "Notebook tasks read parameters with the dbutils.widgets submodule. Python script tasks get command-line arguments.", "params"],
+[4, "How can a task parameter set with a static value be changed?",
+ ["Only by updating the task definition", "With Run now with different parameters", "With a task value", "It changes on every run"],
+ "Static task parameters can only be overridden by editing the task. Job parameters can be overridden per run.", "params"],
+[4, "Which permission lets a user override job parameter values for a manual run?",
+ ["CAN MANAGE RUN or higher", "CAN VIEW", "USE CATALOG", "READ FILES"],
+ "Users with CAN MANAGE RUN or higher can override parameters. A default parameter value isn't a security control.", "params"],
+[4, "Job parameters are defined at the job level. How do they reach notebook tasks that use key-value parameters?",
+ ["They are pushed down to those tasks automatically", "Each task must copy them by hand", "Only through task values", "They don't; job parameters only apply to SQL tasks"],
+ "Job parameters are pushed down to tasks that use key-value parameters.", "params"],
+[4, "A table update trigger watches `orders` and `customers`. The job must run only after both have new data. Which option?",
+ ["All tables are updated", "Any table is updated", "Wait after last change", "Minimum time between triggers"],
+ "Any fires on an update to one table. All waits until every watched table has updated.", "tut"],
+[4, "Which trigger fits best when a job should run whenever new files land in a Unity Catalog volume?",
+ ["File arrival", "Table update", "Scheduled every minute", "Continuous"],
+ "File arrival is data-driven and checks the location about every minute.", "fat"],
+[4, "File events are enabled on the external location a file arrival trigger watches. What changes?",
+ ["The 10,000-file limit no longer applies", "The trigger checks every second", "Retries are turned off", "The trigger becomes a table update trigger"],
+ "With file events there's no file limit. Without them, the location can hold at most 10,000 files.", "fat"],
+[4, "A Lakeflow Job has a Pipeline task for a Lakeflow pipeline. What runs when the task runs?",
+ ["An update of that pipeline", "A full refresh every time", "Only the pipeline's validation", "A new pipeline is created"],
+ "A pipeline task triggers an update of the pipeline. Job-triggered updates retry recoverable errors.", "upd"],
+[4, "A For each task's nested task sets a task value in every iteration. What does a downstream reference to the nested task's key return?",
+ ["A list of every iteration's value, ordered by iteration", "Only the last iteration's value", "Only the first iteration's value", "An error"],
+ "Dynamic references return the full list, ordered by iteration index. A missing value is null in its position.", "tv"],
+
+// ---------- S5 CI/CD ----------
+[5, "In a Databricks Git folder, a developer switches branches with uncommitted changes that don't conflict. What happens to the changes?",
+ ["They carry over to the new branch", "They are discarded", "They are committed automatically", "The switch is blocked"],
+ "Uncommitted changes carry over unless they conflict. Discard them first if you don't want them.", "gitops"],
+[5, "A developer switches to a branch that doesn't contain a notebook from the current branch. What happens to that notebook in the workspace?",
+ ["It may be deleted; switching back recreates it with a new ID and URL", "It stays unchanged", "It is moved to the trash for 30 days", "It is committed to the new branch"],
+ "Switching branches can delete workspace assets the new branch doesn't have.", "gitops"],
+[5, "What is required to commit from a Databricks Git folder?",
+ ["A commit message, then Commit & Push", "A pull request", "A bundle deploy", "Admin approval"],
+ "Changes are shown in the Git dialog. Enter a message and click Commit & Push.", "gitops"],
+[5, "A developer can't push to the default branch. Where does the Databricks doc say to open the pull request?",
+ ["In the Git provider's interface, from a new branch", "In the Databricks Git dialog only", "With databricks bundle deploy", "In Catalog Explorer"],
+ "The doc says to create a branch and use your Git provider to open the PR. The exam guide mentions creating PRs through Git integration.", "gitops"],
+[5, "What does Pull do to an open notebook in a Git folder when upstream changes arrive?",
+ ["Updates the files and clears the notebook state", "Nothing until the notebook is reopened", "Commits local changes first", "Creates a new branch"],
+ "Pulls update files to the latest remote version and clear notebook state.", "gitops"],
+[5, "Why does Databricks recommend merge over rebase in Git folders for most users?",
+ ["Merge doesn't force push or rewrite commit history", "Merge is faster", "Rebase isn't supported", "Merge deletes stale branches"],
+ "Rebase in Git folders runs git commit and git push --force.", "gitops"],
+[5, "What does Reset do on a Git folder branch?",
+ ["The same as git reset --hard plus git push --force: local and remote changes are lost", "Discards only uncommitted local changes", "Reverts the last commit only", "Deletes the Git folder"],
+ "Reset affects both the local and the remote branch.", "gitops"],
+[5, "A notebook saved in source format (.py) is committed from a Git folder. Are its outputs committed?",
+ ["No, not by default", "Yes, always", "Only images", "Only if under 10 MB"],
+ "Notebook outputs aren't committed by default for source formats.", "gitops"],
+[5, "A merge in a Git folder hits a conflict. How is it resolved?",
+ ["In the Git folders UI: edit or choose a side, mark resolved, then Continue Merge", "Only from a local terminal", "Databricks always takes the incoming changes", "The merge is cancelled automatically"],
+ "You can edit the file, keep current or take incoming changes, or abort.", "gitops"],
+[5, "A bundle variable has a value in `variable-overrides.json` and a different value in the target's `variables`. No --var or env var is set. Which wins?",
+ ["variable-overrides.json", "The target variables", "The default", "The deploy fails"],
+ "Precedence: --var, BUNDLE_VAR_, variable-overrides.json, target variables, default.", "bvar"],
+[5, "Which is a behavior of `mode: development` in a bundle target?",
+ ["Concurrent runs are allowed and the deployment lock is off", "The Git branch is checked", "Pipelines are set to development: false", "A service principal is required"],
+ "Development mode relaxes controls for iteration. Production mode adds checks.", "bdm"],
+[5, "A team promotes one codebase to dev, test and prod workspaces. What keeps environment-specific values out of the code?",
+ ["Bundle variables with per-target values and overrides", "A separate Git repo per environment", "Hard-coded values in each notebook", "Cluster policies"],
+ "Targets override variables and settings so the same bundle deploys everywhere.", "bvar"],
+
+// ---------- S6 Optimize & troubleshoot ----------
+[6, "A liquid-clustered table gets new data every hour. What does a plain `OPTIMIZE` (no FULL) do?",
+ ["Clusters data incrementally, mainly new data", "Rewrites every file", "Removes old versions", "Changes the clustering keys"],
+ "Plain OPTIMIZE is incremental. OPTIMIZE FULL reclusters everything.", "lc"],
+[6, "Which statement removes liquid clustering from a table?",
+ ["ALTER TABLE t CLUSTER BY NONE", "ALTER TABLE t DROP CLUSTERING", "OPTIMIZE t FULL", "ALTER TABLE t ZORDER BY NONE"],
+ "CLUSTER BY NONE removes the keys. CLUSTER BY AUTO lets Databricks choose.", "lc"],
+[6, "Predictive optimization runs OPTIMIZE on a table. Which of these does it NOT do?",
+ ["ZORDER", "Compact files", "Run on serverless compute", "Apply to UC managed tables"],
+ "Predictive optimization runs OPTIMIZE without ZORDER, plus VACUUM and ANALYZE.", "po"],
+[6, "For which accounts is predictive optimization on by default?",
+ ["Accounts created on or after 11 November 2024", "All accounts since 2020", "None; it's always opt-in", "Only accounts using Hive metastore"],
+ "Older accounts can enable it at catalog, schema or table level.", "po"],
+[6, "In the Jobs UI, a task shows Upstream failed. Where is the root cause?",
+ ["In an upstream task that failed; find it in the DAG view", "In this task's own code", "In the cluster policy", "In the bundle config"],
+ "Upstream failed means this task didn't run because a dependency failed.", "runif"],
+[6, "AQE's skew handling splits skewed partitions. In which operations?",
+ ["Joins", "Writes to Delta", "Reads from cloud storage", "UDF calls"],
+ "AQE splits skewed partitions in joins.", "aqe"],
+[6, "A slow join stage shows a few huge tasks and many small ones. AQE is on. What else can reduce the skew?",
+ ["Choose a join key or clustering that spreads data more evenly", "Lower the number of executors", "Turn off Photon", "Increase auto-termination"],
+ "Skew comes from uneven key distribution. AQE helps; fixing the key distribution fixes the cause.", "aqe"],
+
+// ---------- S7 Governance ----------
+[7, "Which SQL attaches row filter function `region_filter` to `sales`, using the `region` column?",
+ ["ALTER TABLE sales SET ROW FILTER region_filter ON (region)", "ALTER TABLE sales ADD FILTER region_filter(region)", "CREATE ROW FILTER region_filter ON sales", "GRANT FILTER region_filter ON sales"],
+ "Row filters are SQL UDFs bound with SET ROW FILTER ... ON (columns).", "fm"],
+[7, "Which SQL attaches mask function `mask_ssn` to the `ssn` column of `people`?",
+ ["ALTER TABLE people ALTER COLUMN ssn SET MASK mask_ssn", "ALTER TABLE people SET MASK mask_ssn ON (ssn)", "CREATE MASK mask_ssn ON people.ssn", "GRANT MASK mask_ssn ON COLUMN ssn"],
+ "Column masks are bound with ALTER TABLE ... ALTER COLUMN ... SET MASK.", "fm"],
+[7, "What does a row filter function return, and what happens to rows where it returns FALSE?",
+ ["BOOLEAN; those rows are excluded from results", "A masked value; the row is shown masked", "An integer row count", "NULL; the query fails"],
+ "Rows where the function returns FALSE are excluded.", "fm"],
+[7, "How many masks can one column have?",
+ ["One", "Two", "Up to four", "Unlimited"],
+ "Each column can have one mask.", "fm"],
+[7, "Can a row filter or column mask be applied directly to a view?",
+ ["No; use a dynamic view or apply them to the underlying table", "Yes, the same as a table", "Only to materialized views", "Only with ABAC"],
+ "Row-level security and column masks can't be applied to a view.", "fm"],
+[7, "A table has a row filter. A user tries `SELECT * FROM t VERSION AS OF 5`. What happens?",
+ ["It isn't supported; time travel doesn't work on tables with row filters or column masks", "It returns filtered historical data", "It returns unfiltered historical data", "It works only for the table owner"],
+ "Time travel isn't supported with table-level row filters or column masks.", "fm"],
+[7, "Who can set a table-level row filter or column mask?",
+ ["The table owner or a user with MANAGE on the table", "Any user with SELECT", "Only the account admin", "Only the schema owner"],
+ "Table-level filters and masks are managed by the table owner or a MANAGE holder.", "fm"],
+[7, "Why does Databricks recommend ABAC policies over table-level filters when the same rule applies to many tables?",
+ ["They are centralized, match governed tags, and apply automatically; table owners can't override them", "They run faster", "They support time travel", "They work on DBR 10.4"],
+ "Table-level filters suit table-specific logic. ABAC is for consistent rules across many tables.", "fm"],
+[7, "A cluster on Databricks Runtime 11.3 queries a table with a column mask. What happens?",
+ ["It fails securely and returns no data", "It returns unmasked data", "It returns masked data", "It upgrades the runtime"],
+ "Runtimes below 12.2 LTS don't support filters and masks, and they fail securely.", "fm"],
+[7, "A team wants to share a curated, group-dependent version of a table by wrapping it in a view. Which approach is that?",
+ ["A dynamic view using functions like is_account_group_member()", "A materialized view with ABAC", "A streaming table", "A volume"],
+ "Dynamic views are the third option besides table-level filters/masks and ABAC.", "fm"],
+[7, "The UNDROP retention window is set to 3 days on a catalog and 10 days on a schema inside it. A table in that schema is dropped. Which window applies?",
+ ["10 days, because the schema setting wins", "3 days, because the catalog setting wins", "7 days, the default", "The shorter of the two"],
+ "The window can be set from 0 hours to 30 days on a catalog or schema. The schema-level setting takes precedence.", "undrop"],
+[7, "What is the difference between owning a catalog and holding MANAGE on it?",
+ ["The owner has every privilege including data access; MANAGE can administer permissions without reading data", "There is no difference", "MANAGE includes SELECT; ownership doesn't", "Only MANAGE can drop the catalog"],
+ "MANAGE lets you grant, revoke, transfer and drop without data access.", "perm"],
+[7, "After `UNSET MANAGED` rolls a table back to external, what happens to the managed copy of the data?",
+ ["It is deleted 7 days after the rollback", "It is kept forever", "It is deleted immediately", "It becomes a second table"],
+ "The managed copy is removed 7 days after the rollback.", "conv"],
+[7, "A service principal should own production tables instead of an engineer. Which statement transfers ownership?",
+ ["ALTER TABLE main.sales.orders OWNER TO `prod-sp`", "GRANT OWNER ON main.sales.orders TO `prod-sp`", "GRANT MANAGE ON main.sales.orders TO `prod-sp`", "SET OWNER main.sales.orders = `prod-sp`"],
+ "Ownership is transferred with ALTER ... OWNER TO. MANAGE grants admin rights but not ownership.", "perm"],
+[7, "Analysts have USE CATALOG and SELECT on a table, but their queries fail with a permission error. What is most likely missing?",
+ ["USE SCHEMA on the table's schema", "MODIFY on the table", "MANAGE on the catalog", "READ FILES on the volume"],
+ "Reading a table needs USE CATALOG, USE SCHEMA and SELECT.", "perm"]
+);
+
+// Batch 3: specific privileges, and choosing an ingestion method. Appended after batch 2.
+Object.assign(LINKS, {
+  priv: DOC + "data-governance/unity-catalog/manage-privileges/privileges",
+  ingest: DOC + "ingestion/cloud-object-storage/",
+});
+
+BANK.push(
+// ---------- S7 Specific privileges ----------
+[7, "An engineer must create new tables in `main.sales`. Which privileges do they need?",
+ ["USE CATALOG on main, USE SCHEMA and CREATE TABLE on main.sales", "CREATE TABLE on main.sales only", "MODIFY on main.sales", "ALL PRIVILEGES on the metastore"],
+ "CREATE TABLE is granted on the schema (or catalog), and the user also needs USE CATALOG and USE SCHEMA.", "priv"],
+[7, "A job must run UPDATE and DELETE statements on `main.sales.orders`. Which privilege covers those statements?",
+ ["MODIFY, plus SELECT on the table and USE CATALOG / USE SCHEMA", "SELECT only", "WRITE FILES", "MANAGE"],
+ "MODIFY covers insert, update and delete. It also needs SELECT on the table and the USE privileges.", "priv"],
+[7, "A loader should only append rows to a table, never update or delete. What is the least-privilege option?",
+ ["INSERT (Beta), a fine-grained alternative to MODIFY", "MODIFY", "ALL PRIVILEGES", "WRITE VOLUME"],
+ "INSERT, UPDATE and DELETE are Beta least-privilege alternatives to MODIFY.", "priv"],
+[7, "Analysts need to read CSV files stored in a Unity Catalog volume. Which privilege on the volume?",
+ ["READ VOLUME", "SELECT", "READ FILES", "BROWSE"],
+ "READ VOLUME reads files in a volume. READ FILES is for paths in an external location. Both also need USE CATALOG and USE SCHEMA.", "priv"],
+[7, "A user must upload new files into a Unity Catalog volume. Which privilege on the volume?",
+ ["WRITE VOLUME", "MODIFY", "WRITE FILES", "CREATE VOLUME"],
+ "WRITE VOLUME lets a user add, remove or modify files in a volume.", "priv"],
+[7, "A user must call the SQL function `main.util.clean_phone()` in their queries. Which privilege on the function?",
+ ["EXECUTE", "SELECT", "USE FUNCTION", "MODIFY"],
+ "EXECUTE invokes a function. Databricks recommends granting it on individual functions.", "priv"],
+[7, "A new hire should see which tables exist and read their metadata in Catalog Explorer, but not query any data. Which privilege?",
+ ["BROWSE on the catalog", "SELECT on the catalog", "USE CATALOG only", "MANAGE on the catalog"],
+ "BROWSE allows discovery and metadata viewing without USE CATALOG or USE SCHEMA. For data objects it's granted at catalog level.", "priv"],
+[7, "A team lead must create new schemas in the `analytics` catalog. Which privileges do they need?",
+ ["CREATE SCHEMA and USE CATALOG on analytics", "CREATE TABLE on analytics", "USE SCHEMA on analytics", "MANAGE on the metastore"],
+ "CREATE SCHEMA is granted on the catalog, together with USE CATALOG.", "priv"],
+[7, "A user has ALL PRIVILEGES on a catalog. Which of these does that NOT include?",
+ ["MANAGE", "SELECT", "MODIFY", "CREATE TABLE"],
+ "ALL PRIVILEGES doesn't include MANAGE (or EXTERNAL USE SCHEMA, EXTERNAL USE LOCATION, READ METADATA).", "priv"],
+[7, "`SHOW GRANTS` is run for a user who holds ALL PRIVILEGES on a table. What does it list?",
+ ["Only ALL PRIVILEGES, not the individual privileges it implies", "Every implied privilege, such as SELECT and MODIFY", "Nothing", "Only ownership"],
+ "SHOW GRANTS returns ALL PRIVILEGES rather than expanding it.", "priv"],
+[7, "An engineer must create external tables at paths under an external location. Where should CREATE EXTERNAL TABLE be granted?",
+ ["On the external location", "On the storage credential, always", "On the metastore", "On the target table"],
+ "It can be granted on an external location or storage credential. Databricks recommends the external location because it's path-scoped.", "priv"],
+[7, "An admin must create a new external location. Which privileges are needed?",
+ ["CREATE EXTERNAL LOCATION on both the metastore and the storage credential", "CREATE EXTERNAL LOCATION on the catalog", "READ FILES on the bucket", "MANAGE on a schema"],
+ "Creating an external location needs CREATE EXTERNAL LOCATION on the metastore and on the referenced storage credential.", "priv"],
+[7, "A user has WRITE FILES on an external location but no other privileges on it. Can they write files there?",
+ ["No; WRITE FILES also requires READ FILES on the same external location", "Yes", "Only to managed tables", "Only with a SQL warehouse"],
+ "WRITE FILES requires READ FILES on the same location.", "priv"],
+[7, "Who can grant USE CATALOG on a catalog?",
+ ["The catalog owner or a user with MANAGE on it", "Any user with SELECT", "Any user with USE CATALOG", "Only the workspace admin"],
+ "Only catalog owners or MANAGE holders can grant USE CATALOG.", "priv"],
+[7, "An analyst must manually trigger a refresh of a materialized view they don't own. Which privilege?",
+ ["REFRESH on the materialized view", "MODIFY on the materialized view", "SELECT on the materialized view", "EXECUTE on the pipeline"],
+ "REFRESH lets users trigger a materialized view refresh. It also needs USE CATALOG and USE SCHEMA.", "priv"],
+[7, "A data steward must add tags to tables and columns. Which privilege, and what extra is needed for a governed tag?",
+ ["APPLY TAG; plus ASSIGN on the governed tag", "MODIFY; nothing else", "MANAGE; plus BROWSE", "SELECT; plus EXECUTE"],
+ "APPLY TAG lets users add and edit tags. Applying a governed tag also needs ASSIGN on that tag.", "priv"],
+[7, "A schema needs its own managed storage location in a different bucket. Which privilege on that bucket's external location?",
+ ["CREATE MANAGED STORAGE", "CREATE EXTERNAL TABLE", "WRITE FILES", "CREATE EXTERNAL VOLUME"],
+ "CREATE MANAGED STORAGE allows setting a custom managed storage location at catalog or schema level.", "priv"],
+[7, "`GRANT SELECT ON CATALOG main TO analysts` is the only grant. Can analysts query `main.sales.orders`?",
+ ["No; they also need USE CATALOG on main and USE SCHEMA on main.sales", "Yes; SELECT on the catalog is enough", "Yes, but only views", "Only after a metastore admin approves"],
+ "SELECT on the catalog is inherited by its tables, but reading a table also needs USE CATALOG and USE SCHEMA.", "perm"],
+[7, "A user was granted SELECT directly on a table and also through its schema. The schema-level grant is revoked. Can they still read the table?",
+ ["Yes; the direct table grant still applies", "No; revoking at schema level removes all access below it", "Only for 7 days", "Only through views"],
+ "Privileges are additive. Revoking one grant doesn't remove a separate grant on the child object.", "perm"],
+[7, "Where does Databricks recommend governing access to files, instead of granting READ FILES on external location paths?",
+ ["Unity Catalog volumes", "DBFS root", "Cluster init scripts", "Workspace files"],
+ "READ FILES reads straight from cloud storage. The docs recommend volumes for governed file access.", "priv"],
+[7, "Which principals can receive a Unity Catalog GRANT?",
+ ["Users, groups and service principals", "Only users", "Only groups", "Only service principals"],
+ "Privileges are granted to principals: users, groups and service principals.", "perm"],
+
+// ---------- S2 Choosing an ingestion method ----------
+[2, "About a few thousand files will land in cloud storage over the life of a project. The team prefers SQL. Which method does the doc suggest is enough?",
+ ["COPY INTO", "A Lakeflow Connect managed connector", "A Kafka streaming job", "The file upload UI"],
+ "The docs say COPY INTO works for files in the order of thousands. Use Auto Loader for millions or more.", "ingest"],
+[2, "Files arriving will reach millions over time. Which method does the doc recommend?",
+ ["Auto Loader", "COPY INTO", "The file upload UI", "A manual dbutils.fs.ls loop"],
+ "For millions of files, Auto Loader needs fewer operations to discover files.", "ingest"],
+[2, "The source JSON schema changes often, with new fields each month. Which method handles this best?",
+ ["Auto Loader", "COPY INTO", "The file upload UI", "A Lakeflow Connect SaaS connector"],
+ "Auto Loader has better primitives for schema inference and evolution.", "ingest"],
+[2, "A partner re-uploads a handful of corrected files. An Auto Loader stream is running on the same folder. How can the team reload just those files?",
+ ["Run COPY INTO on that subset while the stream keeps running", "Delete the Auto Loader checkpoint", "Restart the stream with a full refresh", "Use the file upload UI"],
+ "The docs note that reloading a subset of re-uploaded files is easier with COPY INTO, even alongside a running Auto Loader stream.", "ingest"],
+[2, "A SQL-only team wants scalable, incremental file ingestion without writing Python. What do the docs point to?",
+ ["Streaming tables, which use Auto Loader under the hood", "COPY INTO for millions of files", "A Python notebook with cloudFiles", "The file upload UI"],
+ "Auto Loader lets SQL users use streaming tables.", "ingest"],
+[2, "Ingestion code is moving to production and needs production-ready infrastructure. What do the docs recommend?",
+ ["Lakeflow pipelines", "An interactive notebook on all-purpose compute", "Manual COPY INTO runs", "The file upload UI"],
+ "The ingestion docs recommend Lakeflow pipelines for production deployments.", "ingest"],
+[2, "Sales data lives in Salesforce. The team wants a governed, incremental feed into Unity Catalog with no custom code. Which method?",
+ ["A Lakeflow Connect managed SaaS connector", "Auto Loader", "COPY INTO", "A file arrival trigger"],
+ "Managed connectors cover SaaS apps like Salesforce, HubSpot, Jira and Workday.", "lfc"],
+[2, "An on-premises SQL Server database has change data capture enabled. Changes must flow into Unity Catalog tables. Which method?",
+ ["A Lakeflow Connect database connector (with an ingestion gateway)", "COPY INTO", "Auto Loader on the database files", "The file upload UI"],
+ "Database connectors use CDC or change tracking through a gateway and staging storage.", "lfc"],
+[2, "The Salesforce connector must keep the full history of every changed account record. Which setting?",
+ ["Turn on history tracking (SCD type 2)", "Leave the default (SCD type 1)", "Use COPY INTO with force = true", "Use Auto Loader rescue mode"],
+ "The default is SCD type 1, which overwrites. SCD type 2 keeps history where the connector supports it.", "scd"],
+[2, "Files land in S3 daily, about 200 per day, with a stable schema. The SQL team wants re-runnable loads that never load a file twice. Which method fits simply?",
+ ["COPY INTO", "A Lakeflow Connect database connector", "A continuous Auto Loader stream in directory listing mode", "The file upload UI"],
+ "COPY INTO is idempotent and suits thousands of files. Auto Loader would also work, but the scale doesn't need it.", "ingest"],
+[2, "A one-off spreadsheet export from a manager's laptop must become a table today. Which method?",
+ ["The file upload UI (Create or modify table)", "Auto Loader", "A Lakeflow Connect connector", "COPY INTO from the laptop path"],
+ "The upload UI takes up to 10 files under 2 GB in total from your machine.", "upload"],
+[2, "An internal app has no managed connector, and the team needs full control over how it's read. What do the docs suggest?",
+ ["SQL/Spark APIs or a custom connector", "A Lakeflow Connect managed connector anyway", "COPY INTO", "The file upload UI"],
+ "SQL and Spark APIs trade some automation for broader source support and customization.", "lfc"],
+[2, "Which ingestion option is described as low-code and scalable, from a variety of sources, using third-party tools?",
+ ["Partner integrations", "COPY INTO", "Auto Loader", "The file upload UI"],
+ "Partner tools provide low-code ingestion into Databricks.", "ingest"],
+[2, "A team needs RabbitMQ messages ingested into Unity Catalog with a managed experience. Which kind of Lakeflow Connect connector covers it?",
+ ["A streaming connector", "A SaaS connector", "A database CDC connector", "A file source connector"],
+ "Lakeflow Connect lists RabbitMQ under streaming sources (message buses and event streams).", "lfc"],
+[2, "Which statement correctly contrasts Auto Loader and Lakeflow Connect?",
+ ["Auto Loader reads files from cloud storage; Lakeflow Connect pulls from apps, databases and other systems", "They are two names for the same feature", "Auto Loader is only for databases", "Lakeflow Connect only reads Parquet files"],
+ "Auto Loader and COPY INTO are for files in cloud storage. Lakeflow Connect covers SaaS, databases, file services and streaming sources.", "lfc"]
+);
+
+</script>
+<script>
+(function () {
+const SECTIONS = { 1: "Platform", 2: "Ingestion", 3: "Transform", 4: "Jobs", 5: "CI/CD", 6: "Optimize", 7: "Governance" };
+const WEIGHT = { 1: 6, 2: 21, 3: 22, 4: 16, 5: 10, 6: 10, 7: 15 };
+const EXAM_SPLIT = { 1: 3, 2: 9, 3: 10, 4: 7, 5: 5, 6: 4, 7: 7 };
+const LETTERS = ["A", "B", "C", "D"];
+const KEY = "cram-drill-v1";
+const $ = (id) => document.getElementById(id);
+
+// ---- persistence (per-browser convenience only) ----
+let store = { stats: {}, retry: {}, filter: "all" };
+try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+// ---- helpers ----
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rand = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+const stat = (id) => store.stats[id] || (store.stats[id] = { c: 0, w: 0 });
+
+// ---- session ----
+let mode = "drill";
+let session = { answered: 0, correct: 0, time: 0 };
+let queue = [], cur = null, perm = null, picked = null, shownAt = 0, lastId = null;
+
+function pool() {
+  const ids = BANK.map((_, i) => i);
+  if (store.filter === "missed") return ids.filter((i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0));
+  if (store.filter === "all") return ids;
+  return ids.filter((i) => BANK[i][0] === Number(store.filter));
+}
+function buildQueue() {
+  const p = pool();
+  const unseen = shuffle(p.filter((i) => !store.stats[i]));
+  const seen = shuffle(p.filter((i) => store.stats[i]));
+  // Unseen questions first, then ones you've seen, weakest first-ish.
+  seen.sort((a, b) => (store.stats[b].w - store.stats[b].c * 0.5) - (store.stats[a].w - store.stats[a].c * 0.5) + (Math.random() - 0.5));
+  queue = unseen.concat(seen);
+  // Pending repeats go a few questions in.
+  Object.keys(store.retry).map(Number).filter((i) => store.retry[i] > 0 && p.includes(i)).forEach((i) => insertAt(i, rand(2, 6)));
+}
+function insertAt(id, pos) {
+  queue = queue.filter((x) => x !== id);
+  queue.splice(Math.min(pos, queue.length), 0, id);
+}
+function nextQ() {
+  if (!queue.length) buildQueue();
+  if (!queue.length) { renderEmpty(); return; }
+  let id = queue.shift();
+  if (id === lastId && queue.length) { queue.splice(1, 0, id); id = queue.shift(); }
+  cur = id; lastId = id; perm = shuffle([0, 1, 2, 3]); picked = null; shownAt = Date.now();
+  renderDrill();
+}
+function answer(slot) {
+  if (picked !== null || cur === null) return;
+  picked = slot;
+  const ok = perm[slot] === 0;
+  const s = stat(cur);
+  session.answered++; session.time += Math.min(Date.now() - shownAt, 300000);
+  if (ok) {
+    s.c++; session.correct++;
+    if (store.retry[cur] > 0) {
+      store.retry[cur]--;
+      if (store.retry[cur] > 0) insertAt(cur, rand(8, 14)); else delete store.retry[cur];
+    }
+  } else {
+    s.w++;
+    store.retry[cur] = 2;           // must get it right twice more
+    insertAt(cur, rand(3, 6));      // comes back soon
+  }
+  save(); renderDrill(); renderRail();
+}
+
+// ---- drill render ----
+function renderDrill() {
+  const q = BANK[cur], s = store.stats[cur];
+  const isRepeat = store.retry[cur] > 0 && picked === null;
+  let h = `<div class="meta"><span class="tag">S${q[0]} · ${SECTIONS[q[0]]}</span>`;
+  if (isRepeat) h += `<span class="tag repeat">Repeat of a miss</span>`;
+  if (s) h += `<span>seen ${s.c + s.w}× · missed ${s.w}×</span>`;
+  h += `</div><p class="q">${fmt(q[1])}</p>`;
+  if (q[5]) h += `<pre><code>${esc(q[5])}</code></pre>`;
+  h += `<div class="opts">`;
+  perm.forEach((oi, slot) => {
+    let cls = "opt";
+    if (picked !== null) { if (oi === 0) cls += " right"; else if (slot === picked) cls += " wrong"; }
+    h += `<button class="${cls}" data-slot="${slot}" ${picked !== null ? "disabled" : ""}><span class="k">${LETTERS[slot]}</span><span>${fmt(q[2][oi])}</span></button>`;
+  });
+  h += `</div>`;
+  if (picked !== null) {
+    const ok = perm[picked] === 0;
+    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${LINKS[q[4]]}" target="_blank" rel="noopener">${LINKS[q[4]].replace("https://", "")}</a>`;
+    if (!ok) h += `<div class="small" style="margin-top:4px">This one will come back in a few questions.</div>`;
+    h += `</div><div class="actions"><button class="btn" id="next">Next question</button><span class="hint">Enter or Space</span></div>`;
+  } else {
+    h += `<div class="actions"><span class="hint">Press 1–4 or A–D to answer</span></div>`;
+  }
+  $("main").innerHTML = h;
+  $("main").querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => answer(Number(b.dataset.slot))));
+  const n = $("next"); if (n) { n.addEventListener("click", nextQ); n.focus({ preventScroll: true }); }
+}
+function renderEmpty() {
+  $("main").innerHTML = `<p class="q">No questions match this filter.</p><p class="small">${store.filter === "missed" ? "You have no misses to repeat. Pick a section or All." : "Pick another filter."}</p>`;
+  cur = null;
+}
+
+// ---- timed 45 ----
+let exam = null, tick = null;
+function startExam() {
+  const ids = [];
+  Object.entries(EXAM_SPLIT).forEach(([sec, n]) => {
+    const p = shuffle(BANK.map((_, i) => i).filter((i) => BANK[i][0] === Number(sec)));
+    p.sort((a, b) => (store.stats[a] ? 1 : 0) - (store.stats[b] ? 1 : 0)); // prefer unseen
+    ids.push(...p.slice(0, n));
+  });
+  exam = { ids: shuffle(ids), perms: ids.map(() => shuffle([0, 1, 2, 3])), picks: ids.map(() => null), i: 0, end: Date.now() + 90 * 60000, done: false };
+  clearInterval(tick); tick = setInterval(renderTimer, 1000);
+  renderExam();
+}
+function renderTimer() {
+  const t = $("timer"); if (!t || !exam || exam.done) return;
+  const ms = exam.end - Date.now(), late = ms < 0, a = Math.abs(ms);
+  t.textContent = (late ? "+" : "") + Math.floor(a / 60000) + ":" + String(Math.floor(a / 1000) % 60).padStart(2, "0") + (late ? " over" : " left");
+  t.classList.toggle("late", late);
+}
+function renderExam() {
+  if (exam.done) return renderResults();
+  const id = exam.ids[exam.i], q = BANK[id], p = exam.perms[exam.i], pick = exam.picks[exam.i];
+  let h = `<div class="meta"><span class="tag">Question ${exam.i + 1} of 45</span><span class="timer" id="timer"></span></div><p class="q">${fmt(q[1])}</p><div class="opts">`;
+  p.forEach((oi, slot) => { h += `<button class="opt ${pick === slot ? "sel" : ""}" data-slot="${slot}"><span class="k">${LETTERS[slot]}</span><span>${fmt(q[2][oi])}</span></button>`; });
+  h += `</div><div class="actions"><button class="btn ghost" id="prev" ${exam.i === 0 ? "disabled" : ""}>Back</button>`;
+  h += exam.i < 44 ? `<button class="btn" id="fwd">Next</button>` : `<button class="btn" id="submit">Submit exam</button>`;
+  h += `<span class="hint">1–4 / A–D to pick · Enter for next · no feedback until you submit</span></div><div class="dots">`;
+  exam.ids.forEach((_, k) => { h += `<button class="${exam.picks[k] !== null ? "done" : ""} ${k === exam.i ? "cur" : ""}" data-k="${k}" aria-label="Go to question ${k + 1}">${k + 1}</button>`; });
+  h += `</div>`;
+  $("main").innerHTML = h; renderTimer();
+  $("main").querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => { exam.picks[exam.i] = Number(b.dataset.slot); renderExam(); }));
+  $("main").querySelectorAll(".dots button").forEach((b) => b.addEventListener("click", () => { exam.i = Number(b.dataset.k); renderExam(); }));
+  const pv = $("prev"); if (pv) pv.addEventListener("click", () => { exam.i--; renderExam(); });
+  const fw = $("fwd"); if (fw) fw.addEventListener("click", () => { exam.i++; renderExam(); });
+  const sb = $("submit"); if (sb) sb.addEventListener("click", submitExam);
+}
+function submitExam() {
+  exam.done = true; clearInterval(tick);
+  exam.ids.forEach((id, k) => {
+    const ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0, s = stat(id);
+    session.answered++; if (ok) { s.c++; session.correct++; } else { s.w++; store.retry[id] = 2; }
+  });
+  exam.took = Math.round((Date.now() - (exam.end - 90 * 60000)) / 60000);
+  save(); renderRail(); renderResults();
+}
+function renderResults() {
+  let score = 0; const bySec = {};
+  exam.ids.forEach((id, k) => { const sec = BANK[id][0], ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0; bySec[sec] = bySec[sec] || [0, 0]; bySec[sec][1]++; if (ok) { score++; bySec[sec][0]++; } });
+  let h = `<div class="meta"><span class="tag">Timed 45 · results</span><span>${exam.took} min</span></div><p class="q">${score} / 45 (${Math.round(score / 45 * 100)}%)</p><div class="secs">`;
+  Object.keys(bySec).sort().forEach((s) => { const [c, n] = bySec[s], pc = c / n; h += `<div class="sec"><span class="n">S${s}</span><div class="bar"><i class="${pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${pc * 100}%"></i></div><span class="v">${c}/${n}</span></div>`; });
+  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed 45</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
+  exam.ids.forEach((id, k) => {
+    const q = BANK[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
+    if (ok) return;
+    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><p class="small">${fmt(q[3])} <a href="${LINKS[q[4]]}" target="_blank" rel="noopener">Docs</a></p></div>`;
+  });
+  h += `</div>`;
+  $("main").innerHTML = h;
+  $("again").addEventListener("click", startExam);
+  $("todrill").addEventListener("click", () => { store.filter = "missed"; save(); setMode("drill"); });
+}
+
+// ---- rail ----
+function renderRail() {
+  $("k-ans").textContent = session.answered;
+  $("k-acc").textContent = session.answered ? Math.round(session.correct / session.answered * 100) + "%" : "–";
+  $("k-pace").textContent = session.answered && mode === "drill" ? Math.round(session.time / session.answered / 1000) : "–";
+  $("k-due").textContent = Object.values(store.retry).filter((v) => v > 0).length;
+  let h = "";
+  Object.keys(SECTIONS).forEach((s) => {
+    let c = 0, w = 0; BANK.forEach((q, i) => { if (q[0] === Number(s) && store.stats[i]) { c += store.stats[i].c; w += store.stats[i].w; } });
+    const n = c + w, pc = n ? c / n : 0;
+    h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${SECTIONS[s]}"><i class="${!n ? "" : pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${n ? pc * 100 : 0}%"></i></div><span class="v">${n ? Math.round(pc * 100) + "% · " + n : "–"}</span></div>`;
+  });
+  $("secs").innerHTML = h;
+  renderChips();
+}
+function renderChips() {
+  const missed = BANK.map((_, i) => i).filter((i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0)).length;
+  let h = `<button class="chip" data-f="all" aria-pressed="${store.filter === "all"}">All<span class="w">${BANK.length}</span></button>`;
+  Object.keys(SECTIONS).forEach((s) => { h += `<button class="chip" data-f="${s}" aria-pressed="${store.filter === s}">S${s} ${SECTIONS[s]}<span class="w">${WEIGHT[s]}%</span></button>`; });
+  h += `<button class="chip missed" data-f="missed" aria-pressed="${store.filter === "missed"}">Missed<span class="w">${missed}</span></button>`;
+  $("chips").innerHTML = h;
+  $("chips").hidden = mode !== "drill";
+  $("chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { store.filter = b.dataset.f; save(); queue = []; renderChips(); nextQ(); }));
+}
+
+// ---- mode ----
+function setMode(m) {
+  mode = m;
+  $("mode-drill").setAttribute("aria-pressed", m === "drill"); $("mode-exam").setAttribute("aria-pressed", m === "exam");
+  if (m === "drill") { clearInterval(tick); queue = []; nextQ(); }
+  else if (!exam || exam.done) startExam(); else { tick = setInterval(renderTimer, 1000); renderExam(); }
+  renderRail();
+}
+$("mode-drill").addEventListener("click", () => setMode("drill"));
+$("mode-exam").addEventListener("click", () => setMode("exam"));
+
+// ---- keyboard ----
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea/i.test(e.target.tagName)) return;
+  const k = e.key.toLowerCase(), slot = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
+  if (mode === "drill") {
+    if (slot >= 0 && picked === null) { e.preventDefault(); answer(slot); }
+    else if ((k === "enter" || k === " ") && picked !== null) { e.preventDefault(); nextQ(); }
+  } else if (exam && !exam.done) {
+    if (slot >= 0) { exam.picks[exam.i] = slot; renderExam(); }
+    else if (k === "enter" && exam.i < 44) { e.preventDefault(); exam.i++; renderExam(); }
+    else if (k === "arrowleft" && exam.i > 0) { exam.i--; renderExam(); }
+    else if (k === "arrowright" && exam.i < 44) { exam.i++; renderExam(); }
+  }
+});
+
+// ---- misses export & reset ----
+$("copy").addEventListener("click", () => {
+  const rows = BANK.map((q, i) => [q, i]).filter(([, i]) => store.stats[i] && store.stats[i].w > 0)
+    .sort((a, b) => store.stats[b[1]].w - store.stats[a[1]].w)
+    .map(([q, i]) => `S${q[0]} | missed ${store.stats[i].w}x, right ${store.stats[i].c}x | ${q[1].replace(/`/g, "")} | Answer: ${q[2][0].replace(/`/g, "")}`);
+  const text = rows.length ? "My cram-drill misses:\n" + rows.join("\n") : "No misses yet.";
+  const done = () => { $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy misses"), 1500); };
+  const fallback = () => { $("copyout").innerHTML = `<textarea id="copyfallback" readonly></textarea>`; $("copyfallback").value = text; $("copyfallback").select(); };
+  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+});
+$("reset").addEventListener("click", () => {
+  $("copyout").innerHTML = `<div class="confirm" style="margin-top:8px"><span>Clear all progress and misses?</span><button class="btn danger" id="yes">Clear</button><button class="btn ghost" id="no">Keep</button></div>`;
+  $("yes").addEventListener("click", () => { store = { stats: {}, retry: {}, filter: "all" }; save(); session = { answered: 0, correct: 0, time: 0 }; $("copyout").innerHTML = ""; setMode(mode); });
+  $("no").addEventListener("click", () => ($("copyout").innerHTML = ""));
+});
+
+$("bankcount").textContent = BANK.length + " questions";
+setMode("drill");
+})();
+</script>
