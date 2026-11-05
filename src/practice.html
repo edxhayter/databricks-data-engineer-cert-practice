@@ -1,4 +1,6 @@
-<title>Data Engineer Associate Practice</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Databricks Data Engineer Practice</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -23,12 +25,14 @@
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
 .wrap { max-width: 1080px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; }
-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
 h1 { font-family: var(--display); font-size: 26px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
 h1 small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: .04em; margin-left: 8px; }
+.switches { display: flex; flex-wrap: wrap; gap: 8px; }
 .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
 .modes button { border: 0; background: transparent; color: var(--muted); font: 600 13px var(--body); padding: 7px 14px; cursor: pointer; }
 .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.modes.exam button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 11px; font: 500 13px var(--body); cursor: pointer; }
 .chip .w { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: 4px; }
@@ -90,10 +94,16 @@ textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); marg
 
 <div class="wrap">
   <header>
-    <h1>Data Engineer Associate Practice <small id="bankcount"></small></h1>
-    <div class="modes" role="group" aria-label="Mode">
-      <button id="mode-drill" aria-pressed="true">Drill</button>
-      <button id="mode-exam" aria-pressed="false">Timed 45</button>
+    <h1><span id="title">Data Engineer Associate Practice</span> <small id="bankcount"></small></h1>
+    <div class="switches">
+      <div class="modes exam" role="group" aria-label="Exam">
+        <button id="exam-assoc" aria-pressed="true">Associate</button>
+        <button id="exam-pro" aria-pressed="false">Professional</button>
+      </div>
+      <div class="modes" role="group" aria-label="Mode">
+        <button id="mode-drill" aria-pressed="true">Drill</button>
+        <button id="mode-exam" aria-pressed="false">Timed mock</button>
+      </div>
     </div>
   </header>
   <div class="chips" id="chips" role="group" aria-label="Filter by section"></div>
@@ -1065,18 +1075,863 @@ BANK.push(
 
 </script>
 <script>
+const PBANK = [];
+PBANK.push(
+[1, "A team's Declarative Automation Bundle has grown large. They want each job and pipeline defined in its own YAML file under a `resources/` folder, while still deploying everything as one bundle. What is the supported approach?",
+ ["Keep one `databricks.yml` at the bundle root and list the resource files or globs in its top-level `include` mapping",
+  "Add a separate `databricks.yml` inside `resources/` so the CLI merges each folder's configuration at deploy time",
+  "List the resource YAML files under the `sync` mapping's `include` key so they are loaded as configuration",
+  "Reference each resource file from the matching entry in the `targets` mapping of the root configuration"],
+ "A bundle must have exactly one `databricks.yml` at its root, and it pulls in other configuration files through the `include` mapping (paths or globs). `sync` controls which files are uploaded, not which configuration is loaded.",
+ "https://docs.databricks.com/aws/en/dev-tools/bundles/settings"],
+
+[1, "A developer deploys a bundle to a target with `mode: development`. Which behavior should they expect for the deployed resources?",
+ ["Schedules and triggers are paused, and resource names get a [dev <short_name>] prefix",
+  "The deployment lock is enforced, and concurrent job runs are disabled by default",
+  "Deployment fails unless `run_as` is set to a service principal for the target",
+  "Cluster overrides through `--cluster-id` are rejected to keep compute consistent"],
+ "Development mode prefixes names with [dev ${workspace.current_user.short_name}], pauses schedules and triggers, enables concurrent runs and disables the deployment lock. Rejecting cluster overrides and checking `run_as` are production-mode behaviors.",
+ "https://docs.databricks.com/aws/en/dev-tools/bundles/deployment-modes"],
+
+[1, "A bundle project uses Poetry with source in `src/my_package` and a `main` entry point. The team wants `databricks bundle deploy` to build the wheel and a classic-compute job task to run that entry point. Which configuration does this?",
+ ["An `artifacts` entry with `type: whl` and `build: poetry build`, plus a task with `python_wheel_task` (`package_name`, `entry_point`) and `libraries: - whl: ./dist/*.whl`",
+  "A `sync` entry that includes `./dist/*.whl`, plus a task with `spark_python_task` pointing at `src/my_package/main.py` and no `libraries` mapping",
+  "An `artifacts` entry with `type: whl` and `path: ./dist`, plus a task with `notebook_task` that runs `%pip install` against the built wheel",
+  "A `variables` entry holding the wheel path, plus a task with `python_wheel_task` that sets `package_name` and reads the path from the variable"],
+ "The `artifacts` mapping with `type: whl` and a `build` command builds the wheel during deployment; the task then installs it through a `libraries` `whl` entry and runs it with `python_wheel_task`.",
+ "https://docs.databricks.com/aws/en/dev-tools/bundles/python-wheel"],
+
+[1, "A bundle defines a job with a `python_wheel_task` that must run on serverless compute. Validation flags the task as incomplete. What does the task need?",
+ ["An `environment_key` that points to an entry in the job's `environments` list, whose `spec` lists the dependencies",
+  "A `new_cluster` block with `data_security_mode` set so that serverless can install the wheel library",
+  "A `job_cluster_key` that points to a shared job cluster with the wheel installed as a cluster library",
+  "A `libraries` list with a `whl` entry only, because serverless reads task libraries in place of environments"],
+ "For Python script, Python wheel and dbt tasks, `environment_key` is required on serverless compute. It references an environment spec (with `environment_version` and `dependencies`) in the job's `environments` list.",
+ "https://docs.databricks.com/aws/en/dev-tools/bundles/examples"],
+
+[1, "A platform team defines some bundle jobs in YAML and others in Python with the `databricks-bundles` package. They want every job, from either source, to get the same email notifications at deploy time. Which approach fits?",
+ ["Write a function decorated with `@job_mutator` and register it under the `python` mapping's `mutators` list",
+  "Add a `load_resources` function that rewrites the YAML files on disk before the bundle is validated",
+  "Set the notifications in a `presets` block, because Python-defined jobs ignore YAML mutators entirely",
+  "Define a complex variable for notifications and reference it only from the Python-defined job classes"],
+ "Mutators are registered under `python.mutators`, run in the listed order, and can modify resources defined in both YAML and Python. If a mutator raises an exception, the deployment is aborted.",
+ "https://docs.databricks.com/aws/en/dev-tools/bundles/python/"],
+
+[1, "A Lakeflow pipeline's Python source runs `%pip install` and then calls `dbutils.library.restartPython()` to load a new package. The pipeline fails. What does Databricks recommend instead?",
+ ["Declare the package as a dependency in the pipeline's Environment settings, pinning its version",
+  "Move the install into a cluster-scoped init script on the serverless pipeline's compute settings",
+  "Install the package as a JVM library on the pipeline so it loads before the Python process starts",
+  "Call `dbutils.library.restartPython()` in a separate source file that runs before the others"],
+ "Pipelines do not support restarting the Python process with `dbutils.library.restartPython()`. Dependencies belong in the pipeline Environment settings, which apply to all source files and allow cached libraries to be reused; serverless pipelines do not support init scripts.",
+ "https://docs.databricks.com/aws/en/ldp/developer/external-dependencies"],
+
+[1, "A serverless notebook installs a wheel that contains compiled native code. It installs fine on some runs but fails on others with no code changes. What is the most likely cause?",
+ ["Serverless compute can run on `aarch64` or `x86_64`, and the architecture can change between runs",
+  "Serverless clears the environment cache at every session start, so the wheel is rebuilt each time",
+  "Serverless only allows wheels from `/Workspace/` paths, so volume paths fail at random",
+  "Serverless applies runtime proxy settings unevenly, so some installs reach the wrong index"],
+ "Serverless compute may run on either `aarch64` or `x86_64` and this can change between runs, so pure-Python wheels are recommended. Starting a new session does not clear the whole environment cache.",
+ "https://docs.databricks.com/aws/en/compute/serverless/dependencies"],
+
+[1, "An engineer adds a pinned `pyspark` version to a serverless notebook's Environment dependencies to match their local tests. After clicking Apply, the session stops with an error. What should they do?",
+ ["Remove `pyspark` and any library that depends on it from the environment dependencies",
+  "Pin `pyspark` to the exact version reported by `spark.version` and apply again",
+  "Install `pyspark` with `%pip` in the first cell instead of in the Environment pane",
+  "Switch the base environment to ML so that a custom `pyspark` version is allowed"],
+ "Serverless notebooks must not install PySpark or any library that depends on it; doing so stops the session with an error.",
+ "https://docs.databricks.com/aws/en/compute/serverless/dependencies"],
+
+[1, "A job on a classic cluster upgraded to Databricks Runtime 15.4 LTS can no longer install a wheel stored in the DBFS root. What is the recommended fix?",
+ ["Move the wheel to a Unity Catalog volume or workspace files and grant read access to the installing identity",
+  "Turn on a Spark configuration that re-enables DBFS root libraries for that single job cluster",
+  "Move the wheel to a DBFS mount point, because only the DBFS root location is deprecated",
+  "Convert the wheel to an egg file, because egg files are still allowed from the DBFS root"],
+ "Storing library files in the DBFS root is deprecated and disabled by default in Databricks Runtime 15.1 and above. Databricks recommends volumes or workspace files; egg files only work on 13.3 LTS and below.",
+ "https://docs.databricks.com/aws/en/libraries/"],
+
+[1, "On a Unity Catalog cluster in standard access mode, a user cannot install a Maven library that works fine on a dedicated cluster. What is required?",
+ ["A workspace admin must add the Maven coordinates to the allowlist for standard access mode",
+  "The user must install the library as a notebook-scoped library with `%pip` instead",
+  "The library must be uploaded to workspace files, which standard access mode reads for JARs",
+  "The cluster must run Databricks Runtime 12.2 LTS, the last version that supports Maven"],
+ "In standard access mode, admins must allowlist Maven coordinates and JAR paths. JARs cannot be notebook-scoped, and workspace files are not a supported JAR source in standard access mode.",
+ "https://docs.databricks.com/aws/en/libraries/"],
+
+[1, "A data governance team needs a Python masking function that analysts can call from SQL in any session, that is discoverable in Catalog Explorer, and whose use is controlled by grants. Which option meets these needs?",
+ ["Create it with `CREATE FUNCTION catalog.schema.fn(...) RETURNS ... LANGUAGE PYTHON AS $$...$$` and grant `EXECUTE`",
+  "Define it with the `@udf` decorator in a shared notebook and call `spark.udf.register` in each session",
+  "Define it as a `@pandas_udf` in a Python module stored in a Git folder that all analysts import",
+  "Create it with `CREATE TEMPORARY FUNCTION` in a startup notebook that every analyst runs first"],
+ "Unity Catalog UDFs persist across sessions, are governed by Unity Catalog permissions and appear in Catalog Explorer; callers need `EXECUTE`. Session-scoped and temporary functions are not governed or shared.",
+ "https://docs.databricks.com/aws/en/udf/unity-catalog"],
+
+[1, "A pandas UDF scores rows with a machine learning model. Loading the model is slow, and the team wants to load it once and reuse it for every batch the UDF processes. Which pandas UDF type fits best?",
+ ["Iterator of Series to Iterator of Series",
+  "Series to Series with a per-call load",
+  "Series to scalar used with `groupBy.agg`",
+  "A row-at-a-time Python `@udf` function"],
+ "The iterator variants are useful when the UDF needs to initialize some state, such as loading a model file once and applying it to every input batch. The total output length must match the input length.",
+ "https://docs.databricks.com/aws/en/udf/pandas"],
+
+[1, "A team writes a batch Unity Catalog Python UDF with `PARAMETER STYLE PANDAS` and `HANDLER 'score'`. Which rule must the handler follow?",
+ ["It must yield one `pandas.Series` per input batch with the same number of rows as that batch",
+  "It must return a single scalar value for each batch, which is then broadcast to every row",
+  "It must receive a full pandas DataFrame of the table and return a DataFrame of any length",
+  "It must read shared files from the driver to cache state between the batches it processes"],
+ "Batch Unity Catalog Python UDFs receive an iterator of `pandas.Series` (tuples for several parameters) and must return the same number of rows as the input. They run in an isolated environment with no shared file system access.",
+ "https://docs.databricks.com/aws/en/udf/python-batch-udf"],
+
+[1, "A Unity Catalog Python UDF needs a PyPI package that is not in the default environment. The team adds an `ENVIRONMENT` clause with `dependencies`. What else must the clause contain?",
+ ["An `environment_version` value, which is required whenever the `ENVIRONMENT` clause is used",
+  "A `cluster_id` value, which tells Unity Catalog where to build and cache the dependency set",
+  "A `requirements_path` value, which points to a requirements file stored in workspace files",
+  "A `python_version` value, which must match the Python version of the calling SQL warehouse"],
+ "`environment_version` is required whenever the `ENVIRONMENT` clause is present; valid values are 3 or higher, or `'None'` for the default Python environment.",
+ "https://docs.databricks.com/aws/en/udf/unity-catalog"],
+
+[1, "A query filters with `WHERE s IS NOT NULL AND my_udf(s) > 1`, where `my_udf` is a session Python UDF that fails on null input. It still fails on nulls. What is the correct fix?",
+ ["Make the UDF handle nulls itself, or call it inside an `IF` or `CASE WHEN` expression",
+  "Swap the predicates so the null check comes first, because Spark evaluates them left to right",
+  "Register the UDF with `spark.udf.register` so Spark SQL skips nulls before calling it",
+  "Declare the UDF return type as `StringType`, the default type that tolerates null input"],
+ "Spark SQL does not guarantee the evaluation order of subexpressions, so a null check in the same `WHERE` clause does not protect the UDF. Make it null-aware or guard it with `IF` or `CASE WHEN`.",
+ "https://docs.databricks.com/aws/en/udf/python"],
+
+[1, "A serverless job loads data into a system that is not idempotent, so each task must run at most once. Which configuration change should the engineer make?",
+ ["Turn off serverless auto-optimization in the task's Retries settings",
+  "Set the job's performance mode to Standard instead of Performance optimized",
+  "Set the job's maximum concurrent runs to 1 in the job's advanced settings",
+  "Switch the task's serverless environment memory from High to Standard"],
+ "Serverless auto-optimization is on by default and may retry failed tasks. Databricks advises turning it off for workloads that must run at most once, such as jobs that are not idempotent.",
+ "https://docs.databricks.com/aws/en/jobs/run-serverless-jobs"],
+
+[1, "A nightly serverless batch job has no strict deadline, and the team wants to lower its cost. Which setting fits, and what is the trade-off?",
+ ["Disable Performance optimized so the job uses standard mode, accepting startup latency of about 4 to 6 minutes",
+  "Enable Performance optimized so the job uses a cheaper SKU, accepting a longer queue time on busy days",
+  "Disable auto-optimization so failed tasks are not retried, accepting a higher DBU rate for each task",
+  "Enable High memory for every task so fewer tasks run in parallel, accepting slower notebook startup"],
+ "Standard performance mode consumes fewer DBUs but may have startup latency of 4 to 6 minutes. Both modes use the same SKU; Performance optimized is meant for time-sensitive workloads.",
+ "https://docs.databricks.com/aws/en/jobs/run-serverless-jobs"],
+
+[1, "A serverless notebook task runs out of memory while building a large pandas DataFrame on the driver. Which statement about the High memory setting is accurate?",
+ ["It raises total memory from 16 GB to 32 GB for the REPL, not the Spark session, and applies only to notebook tasks",
+  "It raises Spark executor memory to 32 GB for every task type, including Python script and wheel tasks",
+  "It doubles Spark session memory at the same DBU emission rate, and it is set in the job's compute settings",
+  "It raises driver and executor memory together, and it is set with a Spark configuration in the notebook"],
+ "High memory (Public Preview) gives 32 GB versus 16 GB for Standard, increases REPL memory rather than Spark session memory, has a higher DBU emission rate, and is only available for notebook tasks.",
+ "https://docs.databricks.com/aws/en/compute/serverless/dependencies"],
+
+[1, "A serverless notebook keeps using an older cached version of a dependency even after the user starts a new session. How can they force a clean reinstall?",
+ ["Click the arrow next to Apply in the Environment pane and choose Reset to defaults",
+  "Detach and reattach the notebook, because a new session clears the environment cache",
+  "Run `dbutils.library.restartPython()` twice so that the cached environment is rebuilt",
+  "Change the base environment to ML and back, which rebuilds only the changed packages"],
+ "Databricks caches the notebook's virtual environment, and starting a new session does not clear the entire cache. Reset to defaults (next to Apply) reinstalls the dependencies.",
+ "https://docs.databricks.com/aws/en/compute/serverless/dependencies"],
+
+[1, "A unit test calls `assertDataFrameEqual(actual, expected)` with default arguments. Both DataFrames hold the same rows and schema, but in a different row order. What happens?",
+ ["The assertion passes, because `checkRowOrder` defaults to `False`",
+  "The assertion fails, because `checkRowOrder` defaults to `True`",
+  "The assertion passes only if `ignoreColumnOrder=True` is also set",
+  "The assertion fails unless both DataFrames are sorted with `orderBy`"],
+ "In the PySpark signature `checkRowOrder` defaults to `False`, so row order is ignored unless you set it to `True`. `ignoreColumnOrder` controls column order, not row order.",
+ "https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.testing.assertDataFrameEqual.html"],
+
+[1, "A test compares two schemas with `assertSchemaEqual(actual, expected)`. The schemas differ only in the nullability of one field, and the team wants that difference to fail the test. What should they change?",
+ ["Pass `ignoreNullable=False`, since nullability is ignored by default",
+  "Pass `ignoreColumnName=False`, since names and nullability share a flag",
+  "Pass `ignoreColumnOrder=True`, since that flag also checks nullability",
+  "Nothing, since `assertSchemaEqual` always compares field nullability"],
+ "`assertSchemaEqual` defaults to `ignoreNullable=True`, so nullability differences pass unless you set it to `False`.",
+ "https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.testing.assertSchemaEqual.html"],
+
+[1, "An engineer refactors a pipeline into small functions such as `add_n(df, n)` so each can be unit tested, and wants to chain them in production code. Which call is valid in PySpark 3.3 and later?",
+ ["`df.transform(add_n, 1).transform(add_n, n=10)`",
+  "`df.transform(add_n(1)).transform(add_n(n=10))`",
+  "`df.transform([add_n, 1], [add_n, 10])`",
+  "`df.apply(add_n, 1).apply(add_n, n=10)`"],
+ "`DataFrame.transform(func, *args, **kwargs)` passes extra positional and keyword arguments to `func`; `*args` and `**kwargs` were added in Spark 3.3.0.",
+ "https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.transform.html"],
+
+[1, "A team stores tests in workspace files and runs `pytest` from a Databricks notebook. Which setup matches the Databricks guidance?",
+ ["Name files `test_*.py`, set `sys.dont_write_bytecode = True`, and call `pytest.main` with `-p no:cacheprovider`",
+  "Name files `*_spec.py`, set `PYTHONPATH` to the volume root, and call `pytest.main` with `--cache-clear`",
+  "Name files `test_*.ipynb`, enable bytecode caching, and call `pytest.main` with `--import-mode=append`",
+  "Name files `tests.py`, keep the default cache plugin, and call `unittest.main` with `exit=True`"],
+ "By default pytest collects `.py` files whose names start with `test_` (or end with `_test`). The Databricks example skips writing `.pyc` files on the read-only file system and disables the cache provider plugin.",
+ "https://docs.databricks.com/aws/en/notebooks/testing"]
+);
+
+PBANK.push(
+[1, "A Structured Streaming query uses `foreachBatch` to append each micro-batch to a Delta table. After a driver failure, the restarted query replayed the last micro-batch and the table now contains duplicate rows. What should the engineer change so a replayed batch is not written twice?",
+ ["Set the `txnAppId` and `txnVersion` write options, binding `txnVersion` to the `batchId`", "Call `dropDuplicates()` on the micro-batch DataFrame before writing it", "Switch the query to the continuous trigger so batches are never replayed", "Write with `mode('overwrite')` so each replay replaces the previous output"],
+ "`foreachBatch` gives only at-least-once guarantees. For Delta targets, `txnAppId` plus `txnVersion` bound to `batchId` lets Delta skip a batch it has already written.",
+ "https://docs.databricks.com/aws/en/structured-streaming/foreach"],
+[1, "A streaming aggregation must upsert per-customer running totals into an existing Delta table, updating rows that already exist. Which approach does Databricks support for this?",
+ ["Use `foreachBatch` and run a `MERGE INTO` against the Delta table for each micro-batch", "Write directly to the Delta sink with `outputMode('update')`", "Write directly to the Delta sink with `outputMode('complete')` and `mergeSchema` enabled", "Write with `outputMode('append')` and set `delta.enableChangeDataFeed` on the target"],
+ "Delta Lake sinks support only append and complete output modes, and merge operations in Structured Streaming must be done through `foreachBatch`.",
+ "https://docs.databricks.com/aws/en/structured-streaming/foreach"],
+[1, "A query counts events in 5-minute tumbling windows with `withWatermark('event_time', '10 minutes')` and writes to a Delta table in append mode. Analysts say each window's count appears well after the window closes. What explains this?",
+ ["In append mode a window's row is written only after the watermark passes it, so output is delayed by the lateness threshold", "Append mode recomputes every open window each trigger and writes them all once the checkpoint is compacted", "The default trigger interval matches the watermark delay, so micro-batches run only every 10 minutes", "Delta sinks buffer aggregated rows until the state store is snapshotted to the checkpoint"],
+ "In append mode the query writes rows after the watermark threshold has passed, so all writes are delayed by the lateness threshold. Update mode emits rows as they change instead.",
+ "https://docs.databricks.com/aws/en/structured-streaming/watermarks"],
+[1, "A query reads two streaming sources, each with its own `withWatermark`. One source regularly lags hours behind the other, and state keeps growing. What is the default global watermark, and what is the trade-off of changing it?",
+ ["The minimum of the watermarks; setting `spark.sql.streaming.multipleWatermarkPolicy` to `max` advances faster but drops data from the slowest stream", "The maximum of the watermarks; setting `spark.sql.streaming.multipleWatermarkPolicy` to `min` keeps late data but grows state", "The watermark of the first source defined; reordering the sources changes which one controls state cleanup", "The average of the watermarks; setting a single watermark on the joined output removes the lag"],
+ "By default Structured Streaming uses the minimum as the global watermark. Setting the policy to `max` follows the faster stream but drops data from the slowest streams.",
+ "https://docs.databricks.com/aws/en/structured-streaming/watermarks"],
+[1, "To save storage, an engineer points two streaming queries that write to different Delta tables at the same `checkpointLocation`. What is the correct guidance?",
+ ["Give each query its own checkpoint location; multiple queries should never share one", "Sharing is fine as long as the two queries write to different target tables", "Sharing is fine if both queries use the same trigger and output mode", "Sharing is fine if the queries run on separate clusters with Dedicated access mode"],
+ "Each query must have a different checkpoint location. The checkpoint stores per-query offsets, commits, state and the unique query ID.",
+ "https://docs.databricks.com/aws/en/structured-streaming/checkpoints"],
+[1, "A production stateful streaming query must be modified and restarted from its existing checkpoint without losing progress. Which change is generally safe to make?",
+ ["Changing the trigger interval or the rate limits on the source", "Adding a new streaming aggregation to the query", "Changing the output sink from a Delta table to Kafka", "Changing the input path that Auto Loader reads from"],
+ "Changing rate limits and trigger intervals is generally safe. Changing stateful operations, sink type or Auto Loader paths generally needs a new checkpoint.",
+ "https://docs.databricks.com/aws/en/structured-streaming/checkpoints"],
+[1, "A CDC flow is defined with `dp.create_auto_cdc_flow(target='customers', source='cdc_feed', keys=['id'], sequence_by='ts')` and no other options. The business expected to see every past address of each customer. What does the target contain?",
+ ["One row per key with only the latest values, because the default is SCD Type 1", "Every version of each row, because the default is SCD Type 2", "Nothing, because the flow fails validation without `stored_as_scd_type`", "Every version of each row, but only for columns listed in `keys`"],
+ "`stored_as_scd_type` defaults to SCD Type 1, which overwrites rows in place. Set it to 2 to keep history.",
+ "https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-apply-changes"],
+[1, "An engineer adds an `apply_as_truncates` condition to an AUTO CDC flow with `stored_as_scd_type=2`. What is the issue?",
+ ["`apply_as_truncates` is supported only for SCD Type 1 targets", "`apply_as_truncates` requires `apply_as_deletes` to be set in the same flow", "Truncate events must be routed to a separate `append_flow` on the target", "`apply_as_truncates` is valid only when the flow is defined with `once=True`"],
+ "AUTO CDC supports truncate only for SCD Type 1. SCD Type 2 targets do not support truncates.",
+ "https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-apply-changes"],
+[1, "In a CDC feed, several change events for the same key can share the same `event_ts`. A second column, `event_seq`, breaks the tie. How should the AUTO CDC flow be sequenced?",
+ ["`sequence_by=struct('event_ts', 'event_seq')`", "`sequence_by=['event_ts', 'event_seq']`", "`keys=['id', 'event_seq']` with `sequence_by='event_ts'`", "`sequence_by='event_ts'` with `ignore_null_updates=True`"],
+ "`sequence_by` accepts a `struct()`; it orders by the first field and uses the next field to break ties.",
+ "https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-apply-changes"],
+[1, "A source system sends CDC updates that contain only the changed columns; every unchanged column arrives as NULL. With default settings the AUTO CDC target loses data. What fixes this?",
+ ["Set `ignore_null_updates=True` so existing target values are kept when the incoming value is NULL", "Set `stored_as_scd_type=2` so NULL updates create a new version instead of overwriting", "Set `except_column_list` to the columns that may arrive as NULL", "Set `apply_as_deletes` to treat rows with NULL columns as deletes"],
+ "`ignore_null_updates` defaults to False, so NULLs overwrite target values. Setting it to True keeps the existing value.",
+ "https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-apply-changes"],
+[1, "A dashboard reads an SCD Type 2 table maintained by an AUTO CDC flow and must show only the currently active version of each record. Which filter is correct?",
+ ["`WHERE __END_AT IS NULL`", "`WHERE __START_AT IS NULL`", "`WHERE __END_AT = current_timestamp()`", "`WHERE __IS_CURRENT = true`"],
+ "SCD Type 2 targets get `__START_AT` and `__END_AT` columns; rows with a null `__END_AT` are the active versions.",
+ "https://docs.databricks.com/aws/en/ldp/cdc"],
+[1, "A team prototypes pipelines on open-source Apache Spark Declarative Pipelines and plans to use the same code for an SCD Type 2 CDC flow with `create_auto_cdc_flow`. What should they know?",
+ ["AUTO CDC is not supported by Apache Spark Declarative Pipelines; it needs Lakeflow pipelines on serverless or the Pro or Advanced edition", "AUTO CDC works the same in both, but SCD Type 2 requires the Advanced edition on Databricks", "AUTO CDC is supported in both, but open-source pipelines must use the older APPLY CHANGES syntax", "AUTO CDC is supported in both, but only from SQL; the Python API is Databricks-only"],
+ "The AUTO CDC APIs are not supported by Apache Spark Declarative Pipelines. On Databricks they require serverless pipelines or the Pro or Advanced editions.",
+ "https://docs.databricks.com/aws/en/ldp/cdc"],
+[1, "A Lakeflow pipeline already writes events to an external Kafka topic through a sink created with `dp.create_sink()`. The team now wants to send the output of an AUTO CDC flow to that same sink. What is the constraint?",
+ ["Only `append_flow` and `update_flow` can write to sinks; `create_auto_cdc_flow` cannot target a sink", "Sinks accept AUTO CDC flows only when `stored_as_scd_type` is 1", "Sinks accept AUTO CDC flows only when defined in SQL rather than Python", "Sinks accept AUTO CDC flows only if the pipeline runs in continuous mode"],
+ "Pipeline sinks can be written only by append and update flows; flows such as `create_auto_cdc_flow` are not supported.",
+ "https://docs.databricks.com/aws/en/ldp/ldp-sinks"],
+[1, "A streaming table joins a stream of orders to a product dimension table. When a product's category is corrected, finance requires that all historical orders reflect the new category. What should the engineer do?",
+ ["Define the joined result as a materialized view so it stays consistent with the current source data", "Keep the streaming table and enable change data feed on the product table", "Keep the streaming table and switch the pipeline to continuous mode", "Keep the streaming table and add a watermark on the orders stream"],
+ "Joins in streaming tables do not recompute when dimensions change. A materialized view keeps results correct at each update.",
+ "https://docs.databricks.com/aws/en/ldp/concepts/streaming-tables"],
+[1, "A fraud team needs newly arriving card transactions processed incrementally with the lowest possible latency and high throughput. Which dataset type best fits, and why?",
+ ["A streaming table, because materialized view refresh latency is in seconds or minutes and not meant for low-latency use", "A materialized view, because incremental refresh processes only new rows with millisecond latency", "A materialized view, because it is always correct and so needs no streaming source", "A view, because it is computed on read and adds no refresh latency"],
+ "Streaming tables suit incremental, high-throughput, low-latency processing. Materialized views refresh in seconds or minutes and are not designed for low-latency use.",
+ "https://docs.databricks.com/aws/en/ldp/concepts/materialized-views"],
+[1, "An engineer fixes a bug in the transformation logic of a streaming table and runs a normal pipeline update. Rows ingested last month still show the old, wrong values. Why, and what is the fix?",
+ ["Rows already appended are not re-queried after code changes; run a full refresh of the table", "The pipeline cached the old plan; restart the pipeline compute and run another update", "The checkpoint is corrupt; delete the checkpoint folder and run a normal update", "Streaming tables apply code changes only to partitions newer than the change; run `OPTIMIZE`"],
+ "A row already appended to a streaming table is not re-queried with later pipeline changes; a full refresh is required to reprocess it.",
+ "https://docs.databricks.com/aws/en/ldp/concepts/streaming-tables"],
+[1, "An Auto Loader stream reading JSON has `cloudFiles.schemaLocation` set and no explicit schema. A new field appears in the source files and the query stops. How does Auto Loader behave in this default mode?",
+ ["It adds the column to the schema, fails with `UnknownFieldException`, and resumes with the new column after a restart", "It ignores the new column and continues, storing nothing about it", "It writes the new field to `_rescued_data` and continues without failing", "It fails and will not restart until the schema is changed or the file is removed"],
+ "With no schema provided the default `cloudFiles.schemaEvolutionMode` is `addNewColumns`: the stream fails after adding the column and picks it up on restart, so Databricks recommends running it in a Lakeflow Job that restarts it.",
+ "https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema"],
+[1, "An Auto Loader stream ingests CSV files with schema inference. Downstream users complain that numeric and date columns arrive as strings. Without supplying a full schema, what should the engineer set?",
+ ["`cloudFiles.inferColumnTypes` to `true`", "`cloudFiles.schemaEvolutionMode` to `addNewColumnsWithTypeWidening`", "`cloudFiles.schemaLocation` to the same path as the checkpoint", "`rescuedDataColumn` to a new column name"],
+ "For JSON, CSV and XML, Auto Loader infers all columns as strings by default. Setting `cloudFiles.inferColumnTypes` to true enables type inference.",
+ "https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema"],
+[1, "A Lakeflow pipeline only needs its tables refreshed once an hour, and the priority is to keep compute cost low. How should it be configured?",
+ ["Triggered pipeline mode, scheduled hourly by a Lakeflow Job", "Continuous pipeline mode with `pipelines.trigger.interval` set to 1 hour", "Continuous pipeline mode with autoscaling set to a minimum of zero workers", "Triggered pipeline mode with every table changed to a streaming table"],
+ "Triggered pipelines stop after each update, which reduces cost. Continuous pipelines need an always-running cluster.",
+ "https://docs.databricks.com/aws/en/ldp/pipeline-mode"],
+[1, "A For each task receives a JSON array of objects, each with a `table` key (for example sales and orders). The nested notebook task needs the table name for the current iteration. Which parameter value is correct, and how many iterations run at once by default?",
+ ["`{{input.table}}`; concurrency defaults to 1", "`{{input.table}}`; concurrency defaults to the number of inputs", "`{{tasks.input.values.table}}`; concurrency defaults to 1", "`{{job.parameters.table}}`; concurrency defaults to 10"],
+ "In the nested task, `{{input}}` is the current element and `{{input.<key>}}` reads a field of an object. The default concurrency is 1.",
+ "https://docs.databricks.com/aws/en/jobs/for-each"],
+[1, "An If/else condition task compares the task value `{{tasks.check.values.version}}`, which resolves to `12.0`, with the literal `12` using the `==` operator. The false branch runs. Why?",
+ ["`==` performs a string comparison, so `12.0` and `12` are not equal", "Task values are always passed as booleans, so the comparison is false", "`==` compares numerically but rounds the left operand down first", "Condition tasks cannot read task values, so the operand resolves to empty"],
+ "`==` and `!=` compare their operands as strings, so `12.0 == 12` is false. The `>`, `>=`, `<` and `<=` operators compare numerically.",
+ "https://docs.databricks.com/aws/en/jobs/if-else"],
+[1, "A CI script needs to run a one-time workload from a JSON definition without creating a saved job that appears in the Jobs UI. Which Databricks CLI command fits?",
+ ["`databricks jobs submit`", "`databricks jobs run-now`", "`databricks jobs create --json @job.json`", "`databricks bundle deploy`"],
+ "`databricks jobs submit` runs a one-time workload that is not saved and is not visible in the UI. `run-now` triggers a job that already exists.",
+ "https://docs.databricks.com/aws/en/jobs/automate"],
+[1, "A Lakeflow Job has three parallel ingestion tasks followed by a cleanup task that must release resources whether the upstream tasks succeed or fail. Which Run if setting should the cleanup task use?",
+ ["All done", "None failed", "At least one succeeded", "All succeeded"],
+ "All done runs the task once all dependencies finish, regardless of their status. All succeeded is the default.",
+ "https://docs.databricks.com/aws/en/jobs/run-if"]
+);
+
+PBANK.push(
+[2, "A streaming job must read every Kafka topic whose name starts with `orders-`, including topics created after the stream starts. Along with `kafka.bootstrap.servers`, which option should be set?", ["`subscribePattern` set to the Java regex `orders-.*`", "`subscribe` set to the wildcard string `orders-*`", "`assign` set to a JSON map of `orders-` partitions", "`topicPrefix` set to the string `orders-`"], "Kafka reads need exactly one of `subscribe` (comma-separated list), `subscribePattern` (Java regex) or `assign` (JSON of topic partitions). A regex is the only way to match topics by pattern.", "https://docs.databricks.com/aws/en/structured-streaming/kafka"],
+[2, "A team reads JSON events from Kafka with `spark.readStream.format('kafka')` and then calls `from_json(col('value'), schema)`. The call fails on type. What explains this?", ["The `value` column is binary and must be cast to string before JSON parsing", "The `value` column is a struct and must be flattened before JSON parsing", "The `value` column is a map and must be exploded before JSON parsing", "The `value` column is null until the `kafka.deserializer` option is set"], "Kafka `key` and `value` are always deserialized as byte arrays, so they arrive as binary. Convert them with DataFrame operations such as `cast('string')` or `from_avro`.", "https://docs.databricks.com/aws/en/structured-streaming/kafka"],
+[2, "An engineer configures a Kinesis streaming read and sets both `streamName` and `streamARN` for the same stream to be safe. What is the correct guidance?", ["Specify either `streamName` or `streamARN`, but not both", "Specify both, because `streamARN` is required for cross-account reads", "Specify only `streamName`, because `streamARN` is a sink option", "Specify both, because `streamName` only sets the checkpoint label"], "The Kinesis source requires either `streamName` or `streamARN`, but not both, in all Databricks Runtime versions.", "https://docs.databricks.com/aws/en/structured-streaming/kinesis"],
+[2, "A pipeline reads from Google Pub/Sub using the `pubsub` format. Which statement about delivery should shape the downstream design?", ["Rows are processed exactly once from the subscriber, but Pub/Sub can publish duplicates and out-of-order rows", "Rows are processed at most once, so a replay job must restore any messages lost on restart", "Rows are deduplicated and ordered by `messageId`, so no downstream handling is needed", "Rows are processed at least once, and ordering is guaranteed only within one subscription"], "The connector has exactly-once processing semantics for rows from the subscriber, but Pub/Sub may publish duplicates or deliver out of order, so your code must handle both.", "https://docs.databricks.com/aws/en/connect/streaming/pub-sub"],
+[2, "A team needs to load only `.jpg` files from a partitioned storage path as raw bytes, keeping partition discovery. Which approach and resulting columns are correct?", ["`binaryFile` format with `pathGlobFilter`; columns `path`, `modificationTime`, `length`, `content`", "`binaryFile` format with `recursiveFileLookup`; columns `path`, `size`, `bytes`, `partition`", "`image` format with `pathGlobFilter`; columns `origin`, `height`, `width`, `data`", "`text` format with `wholetext`; columns `path`, `modificationTime`, `value`, `length`"], "The binary file source returns `path`, `modificationTime`, `length` and `content`, and `pathGlobFilter` filters files while keeping partition discovery. `recursiveFileLookup` skips partition discovery.", "https://docs.databricks.com/aws/en/query/formats/binary"],
+[2, "In a Lakeflow pipeline, an engineer writes `CREATE FLOW f AS AUTO CDC INTO silver.customers FROM STREAM(bronze.cdc) KEYS (id) SEQUENCE BY seq;` with no `STORED AS` clause. How is the target maintained?", ["As SCD type 1, overwriting rows in place with no history columns", "As SCD type 2, adding `__START_AT` and `__END_AT` columns", "As an append-only table that keeps every change event", "As BITEMPORAL, keeping both system and valid time"], "In `AUTO CDC INTO`, `STORED AS` is optional and the default is SCD type 1. Only SCD type 2 targets carry `__START_AT` and `__END_AT`.", "https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-apply-changes-into"],
+[2, "A CDC feed has ties on `event_ts`, which are broken by `log_offset`. How should ordering be declared in an `AUTO CDC INTO` flow?", ["`SEQUENCE BY STRUCT(event_ts, log_offset)`", "`SEQUENCE BY event_ts, log_offset`", "`SEQUENCE BY event_ts TIEBREAK log_offset`", "`KEYS (event_ts, log_offset)` with no `SEQUENCE BY`"], "`SEQUENCE BY` is required and takes one sortable column; for multiple columns use a `STRUCT`, which orders by the first field and then the next on ties.", "https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-apply-changes-into"],
+[2, "A source system occasionally emits a TRUNCATE event. The team wants to use `APPLY AS TRUNCATE WHEN` in an AUTO CDC flow that keeps full history. What happens?", ["It is not possible, because truncate is supported only for SCD type 1", "It works, and closes every open row by setting `__END_AT`", "It works, but only when `IGNORE NULL UPDATES` is also set", "It is not possible, because truncate needs `APPLY AS DELETE WHEN` first"], "`APPLY AS TRUNCATE WHEN` is supported only for SCD type 1; SCD type 2 does not support the truncate operation.", "https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-apply-changes-into"],
+[2, "An SCD type 2 target built with `dp.create_auto_cdc_flow()` grows quickly because `last_login` changes constantly. The team wants new versions only when other columns change. What should they set?", ["`track_history_except_column_list=['last_login']`", "`except_column_list=['last_login']`", "`ignore_null_updates=True`", "`stored_as_scd_type='1'` for `last_login` only"], "By default SCD type 2 creates a new version when any column changes. `track_history_except_column_list` (or `TRACK HISTORY ON * EXCEPT` in SQL) excludes columns from history tracking while keeping them in the table.", "https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-apply-changes"],
+[2, "A team wants external Iceberg v3 clients to read streaming tables produced by a Lakeflow pipeline. Which statement is correct?", ["Set Iceberg properties such as `delta.universalFormat.enabledFormats = 'iceberg'` and enable external metadata; external writes are not supported", "Recreate the streaming tables `USING ICEBERG`; external clients can then read and write them", "Enable change data feed on each table; Iceberg clients read the feed as snapshots", "Publish the tables through a share; Iceberg clients cannot read pipeline datasets otherwise"], "External access for pipeline datasets uses table properties including column mapping, `delta.universalFormat.enabledFormats = 'iceberg'` and `delta.enableIcebergCompatV3`, plus `pipelines.externalMetadata.enabled`. External writes to pipeline datasets are not supported.", "https://docs.databricks.com/aws/en/external-access/external-for-pipelines"],
+[2, "A SQL Server source has some tables with primary keys and some without. Lakeflow Connect will ingest all of them with minimal source load. Which change tracking setup matches Databricks guidance?", ["Change tracking for tables with primary keys, and CDC for tables without", "CDC for all tables, because change tracking cannot be used with Lakeflow Connect", "Change tracking for all tables, because it adds keys when none exist", "CDC for tables with primary keys, and change tracking for tables without"], "Change tracking is lightweight but requires a primary key; CDC does not need one but adds more load. Databricks recommends change tracking for any table with a primary key.", "https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/sql-server-source-setup"],
+[2, "A PostgreSQL table has no primary key and must be ingested with the Lakeflow Connect PostgreSQL connector. Which source setting is required for it?", ["`REPLICA IDENTITY FULL` on the table", "`REPLICA IDENTITY DEFAULT` on the table", "`wal_level = replica` on the server", "A replication slot using the `wal2json` plugin"], "Use FULL replica identity for tables without a primary key or with TOASTable columns. The WAL level must be `logical`, and only the `pgoutput` plugin is supported.", "https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/postgresql-source-setup"],
+[2, "A DBA prepares a MySQL instance for the Lakeflow Connect MySQL connector. Which binary log configuration is required?", ["Binary logging on, format `ROW`, row image `FULL`", "Binary logging on, format `MIXED`, row image `MINIMAL`", "Binary logging on, format `STATEMENT`, row image `FULL`", "Binary logging on, format `ROW`, value options `PARTIAL_JSON`"], "The connector needs binary logging enabled, `ROW` format and `FULL` row image, with `binlog_row_value_options` left empty; `PARTIAL_JSON` is not supported.", "https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/mysql-source-setup"],
+[2, "A team reviews costs for a Lakeflow Connect database connector (standard gateway setup). Which statement about compute is correct?", ["The ingestion gateway runs continuously on classic compute; the ingestion pipeline runs on serverless", "The ingestion gateway and ingestion pipeline both run on serverless compute", "The ingestion gateway runs on serverless; the ingestion pipeline runs on classic compute", "The ingestion gateway runs only when the ingestion pipeline is triggered"], "The gateway runs continuously on classic compute to capture changes before logs are truncated, and you pay for it even when the pipeline is idle. The ingestion pipeline runs on serverless compute.", "https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/cdc-overview"],
+[2, "A Lakeflow Connect pipeline must keep prior versions of changed source rows. What is the default, and how is history enabled?", ["Default is SCD type 1; set `scd_type: SCD_TYPE_2` in `table_configuration`", "Default is SCD type 2; set `scd_type: SCD_TYPE_1` to turn history off", "Default is SCD type 1; add an AUTO CDC flow on top of the destination", "Default is append-only; set `history: true` on the ingestion gateway"], "By default history tracking is off (SCD type 1). Set `scd_type` to `SCD_TYPE_2` in `table_configuration`, or turn History tracking on in the UI.", "https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/scd"],
+[2, "A provider shares data with a partner that uses Databricks with Unity Catalog. Which SQL creates the recipient?", ["`CREATE RECIPIENT partner USING ID 'aws:us-west-2:<metastore-uuid>';`", "`CREATE RECIPIENT partner USING TOKEN 'aws:us-west-2:<metastore-uuid>';`", "`CREATE RECIPIENT partner USING ID '<workspace-id>';`", "`CREATE RECIPIENT partner USING SHARE '<cloud>.<region>.<account-id>';`"], "Databricks-to-Databricks recipients are created with the recipient's sharing identifier in the form `<cloud>:<region>:<uuid>`. The docs now call the protocol OpenSharing (formerly Delta Sharing).", "https://docs.databricks.com/aws/en/opensharing/create-recipient"],
+[2, "A provider creates an open (bearer token) recipient for a partner who does not use Databricks. Which statement is correct?", ["The credential file can be downloaded only once, and the token is valid for at most one year", "The credential file can be downloaded many times, and the token never expires by default", "The partner signs in with a Databricks account, and no token is issued", "The partner receives a sharing identifier and mounts the share as a catalog"], "Databricks-to-Open bearer token recipients get a credential file that can be downloaded only once, and tokens are valid for a maximum of one year. Rotation issues a new token and activation URL.", "https://docs.databricks.com/aws/en/opensharing/create-recipient-token"],
+[2, "A Databricks recipient wants to query the change data feed of a shared table with `table_changes()`. What must the provider do?", ["Enable change data feed on the table, then add it to the share `WITH HISTORY`", "Add the table to the share `WITHOUT HISTORY` and grant `MODIFY` to the recipient", "Add the table with a `PARTITION` clause and grant `SELECT` on the table", "Enable change data feed on the share, then grant `USE SHARE` to the recipient"], "To let recipients use `table_changes()`, enable CDF on the table before sharing it `WITH HISTORY`. History sharing also allows time travel and streaming reads.", "https://docs.databricks.com/aws/en/opensharing/create-share"],
+[2, "In a clean room, collaborator A uploads a notebook and names collaborator B as the runner. Collaborators B and C have not reviewed it. What must happen before it runs?", ["B and C must approve it, then only B can run it", "Only A must approve it, then any collaborator can run it", "B must approve it, then A or B can run it", "A, B and C must approve it, then only A can run it"], "Every notebook needs approval from all collaborators except the uploader, and only the designated runner can run it. A runner who did not upload it must approve it first.", "https://docs.databricks.com/aws/en/clean-rooms/clean-room-notebook"],
+[2, "A clean room notebook writes output tables. Which statement about them is correct?", ["They are read-only, stored for 30 days, and readable by default only by the runner", "They are writable, stored for 90 days, and readable by all collaborators", "They are read-only, stored until the clean room is deleted, and readable by all", "They are writable, stored for 7 days, and readable by metastore admins only"], "Output tables are temporary read-only tables in the runner's metastore, stored for 30 days. By default only the principal that ran the notebook can read them; copy them to keep them longer.", "https://docs.databricks.com/aws/en/clean-rooms/output-tables"],
+[2, "A user must create a foreign catalog on an existing PostgreSQL connection owned by another team. Which privileges are needed?", ["`CREATE CATALOG` on the metastore, plus `CREATE FOREIGN CATALOG` on the connection", "`CREATE CONNECTION` on the metastore, plus `USE CONNECTION` on the connection", "`CREATE CATALOG` on the metastore, plus `USE CONNECTION` on the connection", "`CREATE FOREIGN CATALOG` on the metastore, plus `SELECT` on the connection"], "Creating a foreign catalog needs `CREATE CATALOG` on the metastore and either ownership of the connection or `CREATE FOREIGN CATALOG` on it. Credentials come from the named connection.", "https://docs.databricks.com/aws/en/query-federation/database-federation"],
+[2, "An analyst cannot query a foreign catalog backed by query federation from a workspace SQL warehouse. Which compute setup is supported?", ["A pro or serverless SQL warehouse on version 2023.40 or above", "A classic SQL warehouse on any version", "A cluster in No Isolation Shared access mode on DBR 13.3 LTS", "A cluster in Standard access mode on DBR 12.2 LTS"], "Query federation needs Databricks Runtime 13.3 LTS or above in Standard or Dedicated access mode, or a pro or serverless SQL warehouse on 2023.40 or above.", "https://docs.databricks.com/aws/en/query-federation/database-federation"],
+[2, "An admin creates a PostgreSQL connection for Lakehouse Federation and wants to avoid plaintext credentials and limit what users can do. Which statement is correct?", ["Use `secret()` for `user` and `password` in the connection; `MODIFY` cannot be granted on foreign tables", "Store `user` and `password` on each foreign catalog; `MODIFY` lets users write back to PostgreSQL", "Pass credentials per query with `remote_query`; foreign tables accept `MODIFY` grants", "Store credentials in a storage credential; foreign tables inherit `MODIFY` from the catalog"], "The connection holds the credentials, and Databricks recommends secrets such as `secret('<scope>','<key>')`. Foreign tables are read-only, so `MODIFY` cannot be granted on them.", "https://docs.databricks.com/aws/en/query-federation/postgresql"],
+[2, "Iceberg tables are registered in AWS Glue, and the team wants to query them from Unity Catalog without copying data. Which statement is correct?", ["Use catalog federation to create a foreign catalog; the Iceberg tables are read-only", "Use catalog federation to create a foreign catalog; the Iceberg tables are fully writable", "Use query federation over JDBC; Glue pushes queries down to its own engine", "Use Auto Loader with `cloudFiles.format` set to `iceberg` to mirror them"], "Iceberg tables managed by an external catalog such as AWS Glue are foreign Iceberg tables read through Lakehouse Federation, and they are read-only. Catalog federation, which covers AWS Glue, is read-only and runs only on Databricks compute.", "https://docs.databricks.com/aws/en/query-federation/"],
+[7, "A data steward is not the owner of table `sales.core.orders`. Which privileges let them add a tag to it?", ["`APPLY TAG` on the table, `USE SCHEMA` on `core`, `USE CATALOG` on `sales`", "`MODIFY` on the table, `USE SCHEMA` on `core`, `USE CATALOG` on `sales`", "`APPLY TAG` on the table only, without any parent privileges", "`MANAGE` on the metastore, which inherits to all tables"], "Tagging needs ownership, or `APPLY TAG` on the object plus `USE SCHEMA` and `USE CATALOG` on its parents. Governed tags also need `ASSIGN` on the tag.", "https://docs.databricks.com/aws/en/database-objects/tags"],
+[7, "A user with `APPLY TAG`, `USE SCHEMA` and `USE CATALOG` can set ordinary tags but fails when assigning the governed tag `data_class`. What is missing?", ["The `ASSIGN` permission on the governed tag", "The `MODIFY` privilege on the table", "Ownership of the parent schema", "The `MANAGE` privilege on the catalog"], "Governed tags can be assigned only by principals with the right permissions; besides tagging privileges, they need `ASSIGN` on that tag, and values must follow the tag policy.", "https://docs.databricks.com/aws/en/database-objects/tags"],
+[7, "An engineer tries to tag three columns with `pii` in one `ALTER TABLE` statement. What happens?", ["It is not allowed; each column must be tagged with a separate statement", "It works if the columns are listed in one `ALTER COLUMN` clause", "It works only for governed tags, not ordinary tags", "It works, but the tag is stored at table level, not column level"], "You cannot assign tags to multiple columns in a single `ALTER TABLE` command, unlike `COMMENT`. Each object can hold at most 50 tags.", "https://docs.databricks.com/aws/en/database-objects/tags"],
+[7, "An auditor needs a SQL list of every column tagged `pii` in a catalog. Where should they look?", ["The `COLUMN_TAGS` view in the catalog's `INFORMATION_SCHEMA`", "The `TABLE_TAGS` view in the catalog's `INFORMATION_SCHEMA`", "The output of `DESCRIBE HISTORY` on each table", "The `system.access.audit` table filtered on tag events"], "Each catalog's `INFORMATION_SCHEMA` exposes `CATALOG_TAGS`, `SCHEMA_TAGS`, `TABLE_TAGS`, `COLUMN_TAGS` and `VOLUME_TAGS`.", "https://docs.databricks.com/aws/en/database-objects/tags"],
+[7, "A user with `MODIFY` on a table wants to remove its existing comment. Which statement does this?", ["`COMMENT ON TABLE my_table IS NULL;`", "`COMMENT ON TABLE my_table DROP;`", "`ALTER TABLE my_table UNSET COMMENT;`", "`COMMENT ON TABLE my_table REMOVE;`"], "`COMMENT ON` with `NULL` removes any existing comment. For tables, `MODIFY` is enough; for views you must be the owner.", "https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-comment"],
+[7, "A team uses AI-generated comments in Catalog Explorer to document tables. Which statement is correct?", ["Suggestions must be reviewed and accepted, and saving one runs an `ALTER` command", "Suggestions are saved automatically once enabled at the catalog level", "Suggestions can be used to classify columns as PII", "Suggestions can be saved by any user with `BROWSE` on the catalog"], "AI-generated comments are not applied automatically and must be reviewed before saving. Saving runs an `ALTER` command, and you need ownership or `MODIFY` (ownership for views).", "https://docs.databricks.com/aws/en/comments/ai-comments"],
+[7, "An admin wants one grant that lets an auditor see metadata for every object in the metastore, now and in future. Which metastore-level privilege inherits that way?", ["`READ METADATA`, the exception to the rule that metastore grants do not inherit", "`BROWSE`, because all metastore-level privileges inherit to every catalog", "`USE CATALOG`, because metastore grants inherit only to catalogs", "`CREATE CATALOG`, because creation rights imply read rights on children"], "Privileges granted on a metastore do not inherit to child objects, except `READ METADATA`, which inherits to all objects. Grants on a catalog or schema do inherit to current and future children.", "https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges"],
+[7, "A platform lead holds `MANAGE` on catalog `finance` but does not own it, and gets an error running `SELECT` on a table inside it. Why?", ["`MANAGE` covers privileges and ownership, but data access such as `SELECT` must be granted explicitly", "`MANAGE` on a catalog does not reach child tables, so it must be granted per table", "`MANAGE` includes `SELECT`, so the error means `USE SCHEMA` was revoked", "`MANAGE` is part of `ALL PRIVILEGES`, which must also be granted on the catalog"], "`MANAGE` lets a principal manage privileges, transfer ownership and drop objects, and applies to children, but holders must grant themselves data privileges like `SELECT`. `ALL PRIVILEGES` excludes `MANAGE`.", "https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/permissions-concepts"],
+[7, "Analysts should be able to find tables and view their metadata across all catalogs, without reading data or being granted `USE CATALOG`. What does Databricks recommend?", ["Grant `BROWSE` on the catalogs to the `All account users` group", "Grant `READ METADATA` on each table to the analysts group", "Grant `USE CATALOG` and `USE SCHEMA` without `SELECT`", "Grant `SELECT` on the `information_schema` of each catalog"], "`BROWSE` lets users discover objects and view metadata without `USE CATALOG` or `USE SCHEMA`. Databricks recommends granting it on catalogs to `All account users`.", "https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/permissions-concepts"],
+[7, "An admin runs `GRANT SELECT ON SCHEMA sales.reporting TO analysts;`. Analysts still cannot query tables in that schema. What else is needed?", ["`USE CATALOG` on `sales` and `USE SCHEMA` on `sales.reporting`", "`SELECT` on each table, because schema grants do not inherit", "`BROWSE` on `sales`, which implies `USE CATALOG` and `USE SCHEMA`", "`READ METADATA` on the metastore, which implies `USE SCHEMA`"], "Reading a table needs `USE CATALOG` on the catalog, `USE SCHEMA` on the schema and `SELECT` on the table; all three are required. `SELECT` granted on the schema already covers current and future tables.", "https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/permissions-concepts"]
+);
+
+PBANK.push(
+// ---------- Section 3: advanced transformations ----------
+[3, "A silver table can contain several versions of each customer. You must keep exactly one row per `customer_id`, the one with the latest `updated_at`, and two versions can share the same `updated_at`. Which filter guarantees one row per customer?",
+ ["`QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY updated_at DESC) = 1`",
+  "`QUALIFY RANK() OVER (PARTITION BY customer_id ORDER BY updated_at DESC) = 1`",
+  "`QUALIFY DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY updated_at DESC) = 1`",
+  "`QUALIFY CUME_DIST() OVER (PARTITION BY customer_id ORDER BY updated_at DESC) = 1`"],
+ "Unlike rank and dense_rank, row_number breaks ties, so only one row per partition gets the value 1. Note that the row kept among tied rows is non-deterministic unless the ORDER BY is unique.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/row_number"],
+[3, "A PySpark job computes `F.sum('amount').over(Window.partitionBy('acct').orderBy('txn_date'))`. Several transactions in an account share the same `txn_date`. What does the running total show for those rows?",
+ ["The same cumulative value for each of them, because the default frame with ordering is a range frame from unbounded preceding to the current row",
+  "A different cumulative value for each of them, because the default frame with ordering is a row frame from unbounded preceding to the current row",
+  "The full account total for each of them, because the default frame covers the whole partition whenever no frame is specified",
+  "No value, because the job fails when orderBy is used without an explicit rowsBetween or rangeBetween frame"],
+ "When ordering is defined, Spark uses a growing range frame (unboundedPreceding, currentRow) by default, so rows with equal ordering values fall in each other's frame. Use rowsBetween to get a strict row-by-row total.",
+ "https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.Window.html"],
+[3, "You need a 7-row moving average of `daily_sales` per store in PySpark: the current row plus the six rows before it, ordered by `sale_date`. Which window specification is correct?",
+ ["`Window.partitionBy('store_id').orderBy('sale_date').rowsBetween(-6, 0)`",
+  "`Window.partitionBy('store_id').orderBy('sale_date').rowsBetween(-7, 0)`",
+  "`Window.partitionBy('store_id').orderBy('sale_date').rowsBetween(-6, -1)`",
+  "`Window.partitionBy('store_id').orderBy('sale_date').rowsBetween(0, 6)`"],
+ "rowsBetween boundaries are inclusive and relative to the current row: 0 is the current row and -1 is the row before it. So -6 to 0 covers seven rows ending at the current row.",
+ "https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.Window.rowsBetween.html"],
+[3, "A data quality check must list the rows in the `orders` DataFrame whose `customer_id` has no match in `customers`. The output should contain only the columns of `orders`. Which PySpark call does this?",
+ ["`orders.join(customers, 'customer_id', 'left_anti')`",
+  "`orders.join(customers, 'customer_id', 'left_semi')`",
+  "`orders.join(customers, 'customer_id', 'left_outer')`",
+  "`orders.join(customers, 'customer_id', 'full_outer')`"],
+ "An anti join returns the left-side rows that have no match on the right, with only left-side columns. A semi join returns the left rows that do have a match.",
+ "https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.join.html"],
+[3, "A sales report needs totals for each (region, product) pair, a subtotal for each region, and a grand total. It must not include product-only subtotals. Which GROUP BY clause produces exactly these grouping sets?",
+ ["`GROUP BY ROLLUP (region, product)`",
+  "`GROUP BY CUBE (region, product)`",
+  "`GROUP BY GROUPING SETS ((region, product), (product), ())`",
+  "`GROUP BY ALL`"],
+ "ROLLUP of N elements gives N+1 grouping sets: (region, product), (region) and (). CUBE gives all 2^N sets, which adds a product-only subtotal.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-groupby"],
+[3, "A query joins a fact table `f` to a dimension table `d` and carries the hint `/*+ SHUFFLE_HASH(f), BROADCAST(d) */`. How does Databricks treat these conflicting join strategy hints?",
+ ["It gives BROADCAST priority over SHUFFLE_HASH, but it does not guarantee that the hinted strategy is used",
+  "It gives SHUFFLE_HASH priority because it is applied to the larger side, and it always uses that strategy",
+  "It ignores both hints because conflicting strategy hints cancel each other out and fall back to a sort-merge join",
+  "It raises an analysis error because only one join strategy hint may appear in a single query"],
+ "When the two sides carry different strategy hints, the priority is BROADCAST, then MERGE, then SHUFFLE_HASH, then SHUFFLE_REPLICATE_NL. The engine is not guaranteed to use the suggested strategy.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-hints"],
+
+// ---------- Section 3: VARIANT ----------
+[3, "A bronze table stores webhook payloads as JSON strings in `raw`. A small number of payloads are malformed. The silver load must convert `raw` to VARIANT and keep loading, writing NULL for the malformed rows. Which expression should it use?",
+ ["`try_parse_json(raw)`",
+  "`parse_json(raw)`",
+  "`schema_of_variant(parse_json(raw))`",
+  "`is_variant_null(parse_json(raw))`"],
+ "parse_json raises MALFORMED_RECORD_IN_PARSING for invalid JSON. try_parse_json returns NULL instead.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/parse_json"],
+[3, "The VARIANT column `payload` holds JSON such as `{'customerId': 42, ...}`. The query `SELECT payload:CustomerId FROM events` returns NULL for every row. What is the most likely cause?",
+ ["VARIANT path elements are matched case-sensitively, so `CustomerId` does not match `customerId`",
+  "The colon syntax only works on VARIANT arrays, so the field must be read with `variant_get` instead",
+  "VARIANT fields must be cast with `::` before they can be selected, otherwise NULL is returned",
+  "VARIANT stores all field names in lower case, so the path must be written as `customerid`"],
+ "Variant path elements are matched in a case-sensitive way, unlike JSON strings, so a path with different casing finds no field and returns NULL.",
+ "https://docs.databricks.com/aws/en/semi-structured/variant-json-diff"],
+[3, "In the VARIANT column `v`, the field `qty` is usually a number but sometimes contains the text 'N/A'. You need an INT column, with NULL where the value cannot be converted, and the query must not fail. Which expression should you use?",
+ ["`try_variant_get(v, '$.qty', 'int')`",
+  "`variant_get(v, '$.qty', 'int')`",
+  "`variant_get(v, '$.qty', 'variant')`",
+  "`schema_of_variant(v:qty)`"],
+ "try_variant_get returns NULL when the path is missing or the value cannot be cast to the requested type. variant_get raises an error when the cast fails.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/try_variant_get"],
+[3, "Each order row has a VARIANT column `v` whose `items` field is an array. You need one output row per item, and orders with an empty or missing `items` array must still appear once with NULL item values. Which FROM clause meets this requirement?",
+ ["`FROM orders o, LATERAL variant_explode_outer(o.v:items) AS e`",
+  "`FROM orders o, LATERAL variant_explode(o.v:items) AS e`",
+  "`FROM orders o, LATERAL variant_get(o.v, '$.items', 'array') AS e`",
+  "`FROM orders o, LATERAL schema_of_variant(o.v:items) AS e`"],
+ "variant_explode is a table-valued generator that produces no rows for NULL or non-container input, including an empty array. variant_explode_outer returns a row of NULL values in that case.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/variant_explode"],
+[3, "An `events` Delta table stores everything in a VARIANT column `payload`. Most queries filter on `payload:event_type`, and the team wants to improve data skipping for those filters. Which design works?",
+ ["Extract `event_type` into its own STRING column during ingestion and use that column as a liquid clustering key",
+  "Add `CLUSTER BY (payload)` so liquid clustering can organise the data by the fields inside the VARIANT",
+  "Partition the table by `payload` so each distinct event type is written to its own directory",
+  "Run `OPTIMIZE events ZORDER BY (payload)` on a schedule to co-locate rows with the same event type"],
+ "VARIANT columns cannot be used for clustering keys, partitions or Z-order keys. Extracting the field into a typed column makes it usable as a clustering key.",
+ "https://docs.databricks.com/aws/en/semi-structured/variant"],
+[3, "You are profiling a VARIANT column whose structure differs between rows, and you want a single schema that combines the structure of all rows in the table. Which function should you use?",
+ ["`schema_of_variant_agg`",
+  "`schema_of_variant`",
+  "`variant_explode`",
+  "`is_variant_null`"],
+ "schema_of_variant returns the schema of one variant value, while schema_of_variant_agg returns the combined schema of all variants in a group.",
+ "https://docs.databricks.com/aws/en/semi-structured/variant"],
+
+// ---------- Section 3: AI functions ----------
+[3, "A Lakeflow pipeline enriches product reviews with `ai_query`. A single endpoint error on one row currently fails the whole update. The team wants the update to finish and to send rows that failed inference to a review table. What should they do?",
+ ["Call `ai_query` with `failOnError => false` and route rows whose `errorMessage` field is not NULL to the review table",
+  "Wrap the `ai_query` call in `try_cast` and route rows where the result is NULL to the review table",
+  "Pass a `modelParameters` struct that sets a retry count and route rows that still fail to the review table",
+  "Set `responseFormat` to `text` so endpoint errors are returned as strings that can be filtered later"],
+ "With failOnError set to false, ai_query returns a STRUCT with response and errorMessage. errorMessage is NULL on success, and response is NULL when the model endpoint fails.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/ai_query"],
+[3, "An engineer classifies 20 million support emails by looping in Python over 1,000-row chunks and calling `ai_query` on a provisioned throughput endpoint for each chunk. Which change follows the Databricks recommendation for batch inference?",
+ ["Submit the whole dataset in a single query against a Databricks-hosted foundation model endpoint whose name starts with `databricks-`",
+  "Reduce the chunk size to 100 rows so each call to the provisioned throughput endpoint finishes faster",
+  "Keep the 1,000-row chunks but use a Python thread pool to send several chunks to the endpoint at once",
+  "Write each chunk to its own table first and run a separate scheduled job for each table"],
+ "AI Functions manage parallelization, retries and scaling themselves, so Databricks recommends submitting the full dataset in one query. For ai_query, it recommends Databricks-hosted foundation models (prefixed databricks-) over provisioned throughput.",
+ "https://docs.databricks.com/aws/en/large-language-models/ai-functions"],
+[3, "A pipeline uses `ai_query` with a chat foundation model to pull fields out of invoices. Downstream code needs the output to be JSON that matches a defined schema. Which `ai_query` argument should you set?",
+ ["`responseFormat`",
+  "`returnType`",
+  "`modelParameters`",
+  "`failOnError`"],
+ "responseFormat, for chat foundation models only, accepts a DDL-style string or a JSON string of type text, json_object or json_schema. returnType applies to custom model endpoints.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/ai_query"],
+[3, "Support tickets must be tagged as `billing`, `outage` or `feature_request` inside a pipeline. The team wants to supply the labels and avoid choosing a model or writing a prompt. Which function fits best?",
+ ["`ai_classify`",
+  "`ai_extract`",
+  "`ai_analyze_sentiment`",
+  "`ai_similarity`"],
+ "ai_classify is a task-specific AI function that classifies input text according to labels you provide. ai_query is the general-purpose option when you need a custom prompt or a specific model.",
+ "https://docs.databricks.com/aws/en/large-language-models/ai-functions"],
+[3, "An engineer wants to set `temperature` in `ai_query` from a column so that each row can use a different value. Which statement about the `modelParameters` argument is correct?",
+ ["Its values must be constant rather than data-dependent, and `temperature` defaults to 0.0",
+  "Its values can reference columns for each row, and `temperature` defaults to 1.0",
+  "It only applies to custom model endpoints, and `temperature` is fixed at 0.0",
+  "It only applies when `failOnError` is false, and `temperature` defaults to 0.5"],
+ "modelParameters must be constant, not data-dependent. The temperature parameter defaults to 0.0.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/functions/ai_query"],
+[3, "Before call transcripts are written to a shared silver table, personal details such as email addresses and phone numbers must be hidden while the rest of the text stays readable. Which task-specific AI function is designed for this?",
+ ["`ai_mask`",
+  "`ai_summarize`",
+  "`ai_fix_grammar`",
+  "`ai_extract`"],
+ "ai_mask masks specified entities in text. ai_extract pulls fields out into a structure rather than hiding them in place.",
+ "https://docs.databricks.com/aws/en/large-language-models/ai-functions"],
+
+// ---------- Section 3: Lakeflow expectations ----------
+[3, "In a Lakeflow pipeline SQL definition, rows with a NULL `order_id` must be removed before they are written to the streaming table, and the update must continue. Which constraint is correct?",
+ ["`CONSTRAINT valid_order EXPECT (order_id IS NOT NULL) ON VIOLATION DROP ROW`",
+  "`CONSTRAINT valid_order EXPECT (order_id IS NOT NULL) ON VIOLATION FAIL UPDATE`",
+  "`CONSTRAINT valid_order EXPECT (order_id IS NOT NULL) ON VIOLATION SKIP RECORD`",
+  "`CONSTRAINT valid_order EXPECT (order_id IS NOT NULL) ON VIOLATION QUARANTINE`"],
+ "ON VIOLATION DROP ROW drops invalid records before they are written and logs the count. ON VIOLATION FAIL UPDATE stops the update.",
+ "https://docs.databricks.com/aws/en/ldp/expectations"],
+[3, "A Python pipeline table has `@dp.expect('valid_amount', 'amount > 0')` and no other expectations. A batch arrives in which 2% of rows have a negative amount. What happens?",
+ ["All rows, including the invalid ones, are written to the target, and the violations are reported in the dataset's data quality metrics",
+  "The invalid rows are dropped before the write, and the number of dropped rows is reported in the data quality metrics",
+  "The update fails and the transaction is rolled back, so no rows from the batch are written to the target",
+  "The invalid rows are moved to an automatically created quarantine table next to the target"],
+ "Warn is the default action: invalid records are written to the target and metrics are recorded. Dropping needs expect_or_drop and failing needs expect_or_fail.",
+ "https://docs.databricks.com/aws/en/ldp/expectations"],
+[3, "A triggered Lakeflow pipeline has two independent flows running in parallel. Flow A uses `@dp.expect_or_fail` and receives a record that violates the rule. What is the result?",
+ ["The update to flow A's table is rolled back atomically, and flow B is not failed by flow A's failure",
+  "Flow A writes the valid rows and skips the invalid one, and flow B continues without changes",
+  "Both flows are rolled back, because any failed expectation fails every flow in a triggered pipeline",
+  "Flow A retries automatically with the invalid record dropped, and flow B waits for the retry to finish"],
+ "A fail expectation atomically rolls back the table update, and in a triggered pipeline one failing flow does not fail other parallel flows. Fixing the cause needs manual intervention before reprocessing.",
+ "https://docs.databricks.com/aws/en/ldp/expectations"],
+[3, "Invalid trip records must be kept for review rather than dropped, valid records must flow downstream, and data quality metrics must still be recorded. Which design follows the Databricks quarantine pattern?",
+ ["A temporary table applies `@dp.expect_all(rules)` and adds an `is_quarantined` column set to `NOT` of all rules combined, and two views filter on that column",
+  "The target table applies `@dp.expect_all_or_drop(rules)`, and a second pipeline reads the event log to rebuild the dropped rows for review",
+  "The target table applies `@dp.expect_all_or_fail(rules)`, and the failed update's error message is used to copy the bad rows into a review table",
+  "Two tables read the same source, one with `@dp.expect_all_or_drop(rules)` and one with no expectations that keeps every row for review"],
+ "The documented pattern uses a temporary table with expect_all and an is_quarantined flag built from the inverted rules, then separate views for valid and invalid rows.",
+ "https://docs.databricks.com/aws/en/ldp/expectation-patterns"],
+[3, "A team keeps twelve data quality rules in a Python dictionary that maps rule names to SQL constraints. Any row that breaks at least one rule must be dropped. Which decorator should the table function use?",
+ ["`@dp.expect_all_or_drop(rules)`",
+  "`@dp.expect_or_drop(rules)`",
+  "`@dp.expect_all(rules)`",
+  "`@dp.expect_all_or_fail(rules)`"],
+ "expect_all_or_drop takes a dictionary of name-to-constraint pairs and applies the drop action to the group. Grouping expectations with a collective action is only available in Python.",
+ "https://docs.databricks.com/aws/en/ldp/expectations"],
+[3, "Which proposed expectation constraint can be used in a Lakeflow pipeline?",
+ ["`CASE WHEN discount IS NOT NULL THEN discount BETWEEN 0 AND 1 ELSE TRUE END`",
+  "`customer_id IN (SELECT customer_id FROM main.crm.customers)`",
+  "`is_valid_email(email)`, where `is_valid_email` is a Python function defined in the pipeline",
+  "`http_post('https://validator.example.com', to_json(struct(*))) = 200`"],
+ "Constraints must be valid SQL that evaluates to true or false per record. They cannot contain custom Python functions, external service calls or subqueries that reference other tables.",
+ "https://docs.databricks.com/aws/en/ldp/expectations"],
+
+// ---------- Section 9: table layout ----------
+[9, "A new Unity Catalog managed table will hold about 600 GB of order data. A team member proposes partitioning it by `order_date` because most queries filter on that column. What does Databricks recommend?",
+ ["Do not partition it, and use liquid clustering on `order_date` instead",
+  "Partition it by `order_date` and Z-order it by the other filter columns",
+  "Partition it by `order_date` and add liquid clustering on the same column",
+  "Partition it by a generated year-month column to keep partitions under 1 GB"],
+ "Databricks advises not partitioning tables with less than 1 TB of data and recommends liquid clustering for managed tables. Clustering is not compatible with partitioning.",
+ "https://docs.databricks.com/aws/en/tables/partitions"],
+[9, "A 400 TB clickstream table is the rare case where testing shows partitioning helps. Candidate columns are `event_ts` (timestamp), `user_id`, `session_id` and `event_date`, and each day holds several GB. Which partition column fits the Databricks guidance?",
+ ["`event_date`, since it has low, known cardinality and each partition would hold at least 1 GB",
+  "`event_ts`, since it gives the finest grain and lets queries prune down to individual events",
+  "`user_id`, since most queries look up one user and each user would get a separate directory",
+  "`session_id`, since sessions are spread evenly and would avoid skew between partitions"],
+ "Partitioning works only for low or known cardinality fields, not high-cardinality fields like timestamps, and each partition should contain at least 1 GB of data.",
+ "https://docs.databricks.com/aws/en/tables/partitions"],
+[9, "A fact table is mostly queried with filters on `order_date` and `store_id`. It also has `order_ts`, which is highly correlated with `order_date`, and a unique `order_id`. Which clustering choice follows the key selection guidelines?",
+ ["`CLUSTER BY (order_date, store_id)`",
+  "`CLUSTER BY (order_ts, order_date, store_id, order_id)`",
+  "`PARTITIONED BY (order_date) CLUSTER BY (store_id)`",
+  "`CLUSTER BY (order_id)` with `ZORDER BY (order_date, store_id)`"],
+ "Choose keys from the columns most often used in filters, and include only one of two highly correlated columns. Clustering is not compatible with partitioning or ZORDER.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[9, "Query patterns on a large liquid-clustered table have changed, so you run `ALTER TABLE sales CLUSTER BY (region, product_id)`. What must you do so that the existing data is organised by the new keys?",
+ ["Run `OPTIMIZE sales FULL`, because changing keys does not rewrite existing data",
+  "Nothing, because `ALTER TABLE ... CLUSTER BY` rewrites all existing files at once",
+  "Run `OPTIMIZE sales ZORDER BY (region, product_id)` to apply the new keys",
+  "Run `VACUUM sales` so that files using the old keys are reclustered"],
+ "Changing clustering keys only affects future clustering, and existing data is not rewritten. OPTIMIZE FULL reclusters all existing data, which can take hours on a large table.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[9, "A Unity Catalog managed Delta table is 1.5 TB and has no `delta.targetFileSize` set. Which target file size does Databricks autotune for it?",
+ ["256 MB",
+  "128 MB",
+  "1 GB",
+  "64 MB"],
+ "Autotuning bases file size on table size: tables under 2.56 TB target 256 MB, and tables over 10 TB target 1 GB.",
+ "https://docs.databricks.com/aws/en/tables/tune-file-size"],
+
+// ---------- Section 9: dimensional models, MVs and metric views ----------
+[9, "Analysts keep five standard views over the same sales star schema, each defining revenue and margin at a different grain. The definitions have drifted apart. Which Databricks feature lets you define each metric once and let users group by any available field?",
+ ["A Unity Catalog metric view with the fact and dimension joins and the measures defined in YAML",
+  "A materialized view per grain, each with its own aggregation and refresh schedule",
+  "A single standard view that aggregates at the finest grain and is grouped again downstream",
+  "A gold Delta table with one row per grain and a column that names the grain"],
+ "Standard views lock in aggregations and groupings when they are created. Metric views separate measure definitions from fields so a metric is defined once and grouped by any available field.",
+ "https://docs.databricks.com/aws/en/uc-semantics/metric-views/"],
+[9, "The metric view `sales_metrics` defines a field `region` and a measure `total_revenue`. Which query is valid?",
+ ["`SELECT region, MEASURE(total_revenue) FROM sales_metrics GROUP BY region`",
+  "`SELECT region, SUM(total_revenue) FROM sales_metrics GROUP BY region`",
+  "`SELECT region, total_revenue FROM sales_metrics GROUP BY region`",
+  "`SELECT * FROM sales_metrics WHERE region = 'EMEA'`"],
+ "Every measure evaluation in a metric view query must use the MEASURE aggregate function, and SELECT * is not supported, so columns must be listed individually.",
+ "https://docs.databricks.com/aws/en/uc-semantics/metric-views/query"],
+[9, "An analyst needs monthly revenue from the metric view `revenue_mv` alongside monthly targets stored in the table `targets`. How should the query be written?",
+ ["Query the metric view with MEASURE in a CTE, then join the CTE result to `targets`",
+  "Join `revenue_mv` directly to `targets` in the FROM clause and wrap the measure in MEASURE",
+  "Join `revenue_mv` directly to `targets` and use SUM instead of MEASURE on the measure",
+  "Add `targets` to the query with a LATERAL join so the measure is evaluated for each target row"],
+ "Metric views cannot be joined directly with other tables at query time. Wrap the metric view query in a CTE and join the CTE result instead.",
+ "https://docs.databricks.com/aws/en/uc-semantics/metric-views/query"],
+[9, "A metric view has an aggregated materialization at (`order_date`, `store_id`) with the measures `SUM(revenue)` and `COUNT(DISTINCT customer_id)`. A dashboard queries both measures grouped by month only. How is the query served?",
+ ["Revenue can be rolled up from the materialization, but the distinct customer count cannot, because DISTINCT aggregates are not additive",
+  "Both measures are rolled up from the materialization, because month is coarser than the stored order_date grain",
+  "Neither measure can use the materialization, because rollup matching only works when GROUP BY lists every stored dimension",
+  "Both measures are served by exact match, because the optimizer converts month to order_date automatically"],
+ "Rollup matching re-aggregates stored results at a coarser grain only for additive measures such as SUM, COUNT, MIN and MAX. DISTINCT aggregates are non-additive, so that part cannot be rolled up.",
+ "https://docs.databricks.com/aws/en/uc-semantics/metric-views/materialization"],
+[9, "You create a standalone materialized view that pre-aggregates daily sales from two Delta source tables for a dashboard. You want refreshes to process only new or changed data where possible. What is required on the source tables?",
+ ["Row tracking must be enabled on the source Delta tables",
+  "Change data feed must be enabled on the materialized view",
+  "The source tables must be liquid clustered on the date column",
+  "The source tables must be partitioned by the refresh date"],
+ "Incremental refresh merges only new or changed data and requires source Delta tables with row tracking enabled.",
+ "https://docs.databricks.com/aws/en/sql/mv-st/materialized"]
+);
+
+PBANK.push(
+[4, "A FinOps engineer sums `usage_quantity` from `system.billing.usage` but keeps only rows where `record_type = 'ORIGINAL'`. After Databricks issues a billing correction, the totals are too high. What should the query do instead?", ["Include all record types and sum `usage_quantity` by the grouping keys", "Keep only RESTATEMENT rows, which replace every ORIGINAL row for that day", "Keep only rows where `ingestion_date` equals `usage_date` to drop corrections", "Exclude rows with a negative `usage_quantity`, which are refunds billed separately"], "RETRACTION records carry a negative `usage_quantity` that cancels the original, and RESTATEMENT records hold the corrected values. Summing across record types by key returns the corrected total.", "https://docs.databricks.com/aws/en/admin/system-tables/billing"],
+[4, "A scheduled job runs its tasks on an existing all-purpose cluster. A cost report that groups `system.billing.usage` by `usage_metadata.job_id` shows that cluster's usage under a NULL job ID. What explains this?", ["`usage_metadata.job_id` is populated for job compute and serverless jobs, not all-purpose compute", "`usage_metadata.job_id` is populated only after a RESTATEMENT record is written for the run", "`usage_metadata.job_id` is populated only for jobs whose `run_as` is a service principal", "`usage_metadata.job_id` is moved into `custom_tags` for every job that runs on a schedule"], "The billing docs state that `job_id` is populated for serverless jobs and job compute but not for all-purpose compute. Use job compute or serverless if you need per-job attribution.", "https://docs.databricks.com/aws/en/admin/system-tables/billing"],
+[4, "You need the current, non-deleted list of jobs from `system.lakeflow.jobs`, which is a slowly changing dimension (SCD2) table. Which approach returns the correct result?", ["Take the latest row per `workspace_id` and `job_id` by `change_time`, then drop rows with `delete_time` set", "Filter to `delete_time IS NULL` first, then take the latest row per `job_id` by `change_time`", "Take the row with the earliest `create_time` per `job_id` and ignore `delete_time` entirely", "Keep rows whose `change_time` falls in the last 395 days and whose `paused` value is false"], "Each change emits a new row, so you select the latest row per job first and only then filter out deletions. Filtering on `delete_time` first returns each deleted job's last state before deletion.", "https://docs.databricks.com/aws/en/admin/system-tables/jobs"],
+[4, "An engineer counts rows in `system.lakeflow.job_run_timeline` grouped by `job_id` to report how many runs each job had. Jobs with long runs show inflated counts. Why?", ["Each row covers at most one hour, so long runs are split into several rows with the same `run_id`", "Each task in a multi-task run writes its own row into `job_run_timeline` with the parent `run_id`", "The table is SCD2, so every status change of a run emits a new row with a new `change_time`", "Queue time and execution time are written as two separate rows for every run of the job"], "Runs longer than an hour produce multiple time-sliced rows sharing one `run_id`, with `result_state` only on the final slice. Count distinct `run_id` instead.", "https://docs.databricks.com/aws/en/admin/system-tables/jobs"],
+[4, "A query reads `run_duration_seconds` from `system.lakeflow.job_run_timeline` for a multi-task job built in the Jobs UI and returns 0 for every run. What should you do?", ["Read the duration columns from `system.lakeflow.job_task_run_timeline` instead", "Wait up to 12 hours for the duration columns to be backfilled for the runs", "Read `execution_duration_seconds` from the `system.lakeflow.jobs` table instead", "Join to `system.billing.usage` and treat `usage_quantity` as run seconds"], "The run-level duration columns are populated only for single-task jobs created with the legacy Jobs APIs; other runs log 0. Use `job_task_run_timeline` for task durations.", "https://docs.databricks.com/aws/en/admin/system-tables/jobs"],
+[4, "A pipeline's event log must be readable by a data quality team who are not the pipeline's run-as user. What does Databricks recommend?", ["Publish the event log to a Unity Catalog table, create a view over it, and grant access on the view", "Grant SELECT directly on the hidden event log table after locating it in Catalog Explorer", "Change the pipeline's owner to the team's group so `event_log()` runs with their identity", "Grant SELECT on `system.information_schema.tables` so the team can read the event log"], "By default only the run-as user can query the event log. Databricks recommends publishing it and creating a view before changing privileges, because sharing the table directly can expose schema metadata.", "https://docs.databricks.com/aws/en/ldp/monitor-event-logs"],
+[4, "Which event log filter and field give per-expectation passed and failed record counts for a Lakeflow pipeline?", ["`event_type = 'flow_progress'` with `details:flow_progress.data_quality.expectations`", "`event_type = 'update_progress'` with `details:update_progress.data_quality.expectations`", "`event_type = 'flow_definition'` with `details:flow_definition.data_quality.expectations`", "`event_type = 'user_action'` with `details:user_action.data_quality.expectations`"], "Expectation metrics (`name`, `dataset`, `passed_records`, `failed_records`) are stored in `details:flow_progress.data_quality.expectations` on `flow_progress` events.", "https://docs.databricks.com/aws/en/ldp/monitor-event-logs"],
+[4, "You want to rebuild a pipeline's dataset lineage (which inputs feed each output) from its event log. Which `event_type` should you query?", ["`flow_definition`", "`flow_progress`", "`operation_progress`", "`create_update`"], "Lineage events have type `flow_definition`, and `details:flow_definition` contains `output_dataset` and `input_datasets`.", "https://docs.databricks.com/aws/en/ldp/monitor-event-logs"],
+[4, "A Lakeflow pipeline on classic compute is slow and you suspect it is under-provisioned. Which event log data best shows whether tasks are waiting for executor slots?", ["`cluster_resources` events, using `avg_num_queued_tasks` and `avg_task_slot_utilization`", "`runtime_details` events, using the Databricks Runtime version recorded for the update", "`flow_progress` events, using `data_quality.dropped_records` for each of the flows", "`user_action` events, using the START and STOP actions recorded for each update"], "`cluster_resources` events report task slot metrics such as queued tasks, slot utilization and executor counts, which show whether the pipeline has enough compute.", "https://docs.databricks.com/aws/en/ldp/monitor-event-logs"],
+[4, "A job run has been repaired twice. A monitoring script needs the run details together with its repair history. Which CLI command returns this?", ["`databricks jobs get-run <run-id> --include-history`", "`databricks jobs list-runs --job-id <job-id> --completed-only`", "`databricks jobs get-run-output <run-id> --include-history`", "`databricks jobs export-run <run-id> --views-to-export ALL`"], "The `--include-history` flag on `get-run` includes the repair history in the response.", "https://docs.databricks.com/aws/en/dev-tools/cli/reference/jobs-commands"],
+[4, "A monitoring script calls `databricks jobs get-run-output` for a notebook task run that prints a very large amount of text. What should the team expect?", ["Only the first 5 MB of the output is returned", "The full output is returned across several pages", "The output is redirected to the cluster log path", "The call fails unless the run is still in progress"], "The CLI reference states that Databricks restricts this API to returning the first 5 MB of the output of a single task run.", "https://docs.databricks.com/aws/en/dev-tools/cli/reference/jobs-commands"],
+[4, "Which CLI command retrieves events for a Lakeflow pipeline and supports SQL-like filtering of the results?", ["`databricks pipelines list-pipeline-events <pipeline-id> --filter ...`", "`databricks pipelines list-updates <pipeline-id> --filter ...`", "`databricks pipelines get-update <pipeline-id> <update-id> --events`", "`databricks jobs list-runs --pipeline-id <pipeline-id> --filter ...`"], "`list-pipeline-events` retrieves events for a pipeline, and its `--filter` flag takes criteria expressed in a SQL-like syntax.", "https://docs.databricks.com/aws/en/dev-tools/cli/reference/pipelines-commands"],
+[4, "A Databricks SQL alert query returns one row per region with a `failed_orders` column. The alert must trigger when the total across all regions exceeds 500. How do you configure the condition?", ["Use the SUM aggregation on `failed_orders`, operator >, static value 500", "Use the first value of `failed_orders`, operator >, static value 500", "Use the COUNT aggregation on `failed_orders`, operator >, static value 500", "Use the first value of `failed_orders`, operator >, static value 500 per row"], "An alert can check the first value of a column or an aggregation such as SUM across all rows. The alert wraps the query in a CTE and applies the aggregate to its result.", "https://docs.databricks.com/aws/en/sql/user/alerts/create"],
+[4, "A Lakeflow job includes a SQL alert task. In a run, the alert query completes and the alert condition is met. What status does the SQL alert task get?", ["Succeeded", "Failed", "Excluded", "Skipped"], "A SQL alert task succeeds when the alert is evaluated successfully, whether or not the condition triggered. It fails only on an evaluation error such as a warehouse connectivity issue or query error.", "https://docs.databricks.com/aws/en/jobs/tasks/alert"],
+[4, "A job branches with an If/else condition task: `{{tasks.load.values.version}} == 12`. The upstream task sets the task value to `12.0`. What happens?", ["The condition evaluates to false and the false branch runs", "The condition evaluates to true and the true branch runs", "The If/else task fails because float values are not allowed", "The condition is rounded to integers and evaluates to true"], "The `==` and `!=` operators compare operands as strings, so `12.0 == 12` is false. The `>`, `>=`, `<` and `<=` operators compare numerically.", "https://docs.databricks.com/aws/en/jobs/if-else"],
+[4, "A workspace has hundreds of Databricks SQL alerts all scheduled at the top of the hour. Some scheduled evaluations never run, although a manual Run now succeeds. What is the most likely cause?", ["The default limit of 250 simultaneous active alert runs was reached, so those runs were skipped", "Alerts whose last state was OK are not re-evaluated until the condition is edited", "Each SQL warehouse can evaluate at most 25 alerts per hour before it queues the rest", "Scheduled alerts only run when the SQL warehouse is already running at that time"], "Each workspace defaults to 250 simultaneous active alert runs; if all slots are in use, a scheduled run is skipped. Databricks suggests staggering schedules.", "https://docs.databricks.com/aws/en/sql/user/alerts/create"],
+[4, "A security alert queries `system.access.audit` for account-level events, filtering on the current workspace's `workspace_id`. It never returns account-level rows. Why?", ["Account-level audit events record `workspace_id` as 0", "Account-level audit events are only in `system.access.outbound_network`", "Account-level audit events have a NULL `event_date` value", "Account-level audit events are kept for only 14 days"], "Account-level audit logs record `workspace_id` as `0`. The docs also advise filtering on `event_date` rather than `event_time` for performance.", "https://docs.databricks.com/aws/en/admin/system-tables/audit-logs"],
+[4, "An alert must flag SQL warehouse queries that spent a long time queued because the warehouse was at capacity. Which `system.query.history` column measures this?", ["`waiting_at_capacity_duration_ms`", "`waiting_for_compute_duration_ms`", "`total_duration_ms`", "`spilled_local_bytes`"], "`waiting_at_capacity_duration_ms` is time spent queued for available compute capacity; `waiting_for_compute_duration_ms` is time waiting for compute to be provisioned.", "https://docs.databricks.com/aws/en/admin/system-tables/query-history"],
+[4, "A manager wants a run-success trend for each job over the last six months. The Runs tab in the Jobs UI does not go back that far. What should you use?", ["Query `system.lakeflow.job_run_timeline`, which retains 395 days", "Export the job's matrix view, which retains 180 days of runs", "Call `databricks jobs list-runs`, which returns all runs ever made", "Raise the job's run history retention in the job settings"], "Databricks keeps job run history in the UI for up to 60 days. The `system.lakeflow.job_run_timeline` system table has 395-day retention.", "https://docs.databricks.com/aws/en/jobs/monitor"],
+[4, "A streaming task in a job has a streaming backlog notification threshold set. When are notifications sent?", ["When the average backlog over 10 minutes exceeds the threshold, then every 30 minutes while it stays high", "When any single micro-batch exceeds the threshold, then once for every micro-batch over it", "When the backlog stays over the threshold for one hour, then once per day while it stays high", "When the backlog exceeds the threshold at task start, then once more when the task completes"], "Backlog notifications fire when the 10-minute average exceeds the threshold, and Databricks waits 30 minutes before sending another. Pipeline tasks don't support them.", "https://docs.databricks.com/aws/en/jobs/notifications"],
+[8, "In the Spark UI stage page, Summary Metrics show a task duration 75th percentile of 40 seconds and a Max of 4 minutes. According to Databricks guidance, what does this suggest and what is a valid fix?", ["Likely skew; salt the skewed key or tune the AQE skew join thresholds", "Likely spill; set shuffle partitions to a fixed value of 10,000", "Likely small files; run VACUUM on the source table before the job", "Likely an overloaded driver; move to a larger driver node type"], "If Max exceeds the 75th percentile by 50% or more, the stage might have skew. Fixes include AQE skew settings, salting keys, liquid clustering or the `REBALANCE` hint.", "https://docs.databricks.com/aws/en/optimizations/spark-ui-guide/long-spark-stage-page"],
+[8, "The Spark UI jobs timeline shows gaps of several minutes in the middle of a pipeline with no Spark jobs running. Cluster Metrics show a red block on the driver in Server load distribution while workers are blue. What is the likely cause?", ["Driver-side work outside Spark, or an overloaded driver", "Data skew concentrated in the pipeline's longest stage", "Executors spilling shuffle data to local disk", "Autoscaling removing idle executors from the cluster"], "Gaps mid-pipeline often come from non-Spark code or complex plans on the driver; a red driver block with blue workers indicates an overloaded driver.", "https://docs.databricks.com/aws/en/optimizations/spark-ui-guide/spark-job-gaps"],
+[8, "The Spark UI timeline for a failed job shows several removed executors in red. What should you check first?", ["The compute event log for resizing or lost spot instance messages", "The query profile's Top operators tab for the most expensive operator", "The `system.billing.usage` table for RETRACTION records on the cluster", "The driver's stdout for print statements from the notebook code"], "Databricks says to first check the compute's Event log for resizing or spot loss, then use the Executors tab logs, with out-of-memory the likeliest remaining cause.", "https://docs.databricks.com/aws/en/optimizations/spark-ui-guide/failing-spark-jobs"],
+[8, "A data engineer must analyze the query profile of a slow query that a colleague ran on a SQL warehouse. Besides being the query owner, what access allows them to view it?", ["CAN MONITOR on the SQL warehouse that ran the query", "CAN USE on the SQL warehouse that ran the query", "SELECT on the `system.query.history` system table", "CAN VIEW on the colleague's workspace home folder"], "To view a query profile you must own the query or have at least CAN MONITOR on the SQL warehouse that ran it.", "https://docs.databricks.com/aws/en/sql/user/queries/query-profile"],
+[8, "You configure compute log delivery to a Unity Catalog volume for a job cluster so you can debug failures after the cluster terminates. How are the logs delivered?", ["Every five minutes, archived hourly, in a subfolder named after the cluster ID", "Once at termination, in a subfolder named after the job ID", "Every minute, in a subfolder named after the run ID", "Hourly, in each user's home folder under a Logs folder"], "Logs are delivered every five minutes and archived hourly; Databricks creates a subfolder named after the compute's `cluster_id`. Volumes are the recommended destination.", "https://docs.databricks.com/aws/en/compute/configure"],
+[8, "A job has tasks A -> B -> C and A -> D. A and D succeeded, B failed, and C did not run because B failed. Which tasks does Repair run re-run?", ["B and C", "A, B and C", "B only", "A, B, C and D"], "Repair re-runs unsuccessful tasks and their dependent tasks; successful tasks are not re-run.", "https://docs.databricks.com/aws/en/jobs/repair-job-failures"],
+[8, "Task B failed because of a bug. You fix its notebook and increase the job cluster size in the job settings, then click Repair run. Which settings does the repair use?", ["The current job and task settings, including the fix and the new cluster size", "The settings captured when the failed run started, ignoring later edits", "The fixed notebook, but the cluster size captured when the run started", "The original notebook, unless the job is started again with Run now"], "Unsuccessful tasks are re-run with the current job and task settings, so notebook path or cluster changes apply to the repair.", "https://docs.databricks.com/aws/en/jobs/repair-job-failures"],
+[8, "In a first repair you overrode the job parameter `load_date`. On a second repair of the same run you want the parameter's original value back. What do you do in the Repair run dialog?", ["Clear the key and value of the overridden parameter", "Set the parameter's value to the literal `null`", "Nothing; each repair reverts overrides automatically", "Delete the first repair from the run's history"], "Parameters entered in the repair dialog override existing values; on later repairs you restore the original by clearing the key and value.", "https://docs.databricks.com/aws/en/jobs/repair-job-failures"],
+[8, "A task appended part of its rows to a Delta table and then failed. Before repairing the run, what should the engineer consider?", ["The task re-runs from the start and may duplicate rows; use MERGE or overwrite", "The task resumes from its last commit, so no rows can be written twice", "Repair rolls back the partial write automatically using Delta time travel", "Repair skips tasks with partial writes, so they must be run with Run now"], "A repair re-runs each unsuccessful task from the beginning, and Lakeflow Jobs does not make tasks idempotent, so use overwrite or merge where duplicates matter.", "https://docs.databricks.com/aws/en/jobs/repair-job-failures"],
+[8, "From the CLI, you want to repair a finished, failed job run by re-running all of its failed tasks. Which command is correct?", ["`databricks jobs repair-run <run-id> --rerun-all-failed-tasks`", "`databricks jobs run-now <job-id> --rerun-all-failed-tasks`", "`databricks jobs repair-run <job-id> --only-failed-tasks`", "`databricks jobs get-run <run-id> --rerun-all-failed-tasks`"], "`repair-run` takes the run ID of a run that is not in progress, and `--rerun-all-failed-tasks` repairs all failed tasks.", "https://docs.databricks.com/aws/en/dev-tools/cli/reference/jobs-commands"],
+[8, "A bundle variable `catalog` has a top-level default of `dev`, the `prod` target sets it to `prod_cat`, and the CI runner exports `BUNDLE_VAR_catalog=hotfix_cat`. The deploy command also passes `--var='catalog=ci_cat'`. Which value is used?", ["`ci_cat`", "`hotfix_cat`", "`prod_cat`", "`dev`"], "The CLI uses the first value found in this order: `--var`, `BUNDLE_VAR_` environment variables, `variable-overrides.json`, target `variables`, then the top-level default.", "https://docs.databricks.com/aws/en/dev-tools/bundles/variables"],
+[8, "A developer deploys a Declarative Automation Bundle to a target with `mode: development`. The bundle defines a job with a daily schedule. How is the job deployed?", ["With a `[dev <short_name>]` name prefix and its schedule paused", "With its original name and its schedule left active", "With its original name and its schedule paused", "With a `[dev <short_name>]` prefix and run once at deploy"], "Development mode prefixes resource names with `[dev ${workspace.current_user.short_name}]`, adds a `dev` tag and pauses all schedules and triggers.", "https://docs.databricks.com/aws/en/dev-tools/bundles/deployment-modes"],
+[8, "A `prod` target with `mode: production` specifies the Git branch `main`. A release engineer runs `databricks bundle deploy` for that target from branch `hotfix-12`. What happens?", ["Branch validation fails the deploy unless `--force` is used", "The deploy succeeds and checks out `main` before uploading", "The deploy succeeds but pauses every job in the bundle", "Branch validation fails the deploy and cannot be overridden"], "Production mode validates that the current branch matches the target's branch; `--force` overrides this and other blocking validations.", "https://docs.databricks.com/aws/en/dev-tools/bundles/deployment-modes"],
+[8, "A production job was created by hand in the UI. The team now defines the same job in a bundle and wants the bundle to manage the existing job instead of creating a duplicate. Which command should they run?", ["`databricks bundle deployment bind <job-key> <job-id>`", "`databricks bundle sync --full --watch <job-id>`", "`databricks bundle validate --output json <job-id>`", "`databricks bundle open <job-key> --force-pull`"], "`bundle deployment bind` links bundle-defined resources to existing resources in the workspace.", "https://docs.databricks.com/aws/en/dev-tools/cli/bundle-commands"],
+[8, "A bundle job passes `${var.run_date}` as a task parameter. An engineer wants a different date on each run without redeploying. What should they do?", ["Define a job parameter and pass it at run time with `bundle run --params`", "Export a new `BUNDLE_VAR_run_date` value before each `bundle run`", "Edit `variable-overrides.json` before each `bundle run` of the job", "Pass `--var='run_date=...'` to `bundle run` for each new run"], "Bundle variables are resolved at deployment time, so per-run values need job parameters, which `databricks bundle run --params` accepts as k=v pairs.", "https://docs.databricks.com/aws/en/dev-tools/bundles/variables"],
+[8, "In the Databricks-recommended CI/CD flow with Git folders, how is the production Git folder updated after a pull request is merged?", ["Automation calls the Repos API to pull changes into the production folder", "Each developer pulls into the production folder after their PR merges", "The production folder syncs itself after every push to any branch", "An admin deletes and re-clones the production folder for each release"], "When a PR merges, automation such as GitHub Actions or a scheduled job pulls changes into production Git folders using the Repos API; folders should not be updated by hand.", "https://docs.databricks.com/aws/en/repos/ci-cd-techniques-with-repos"],
+[8, "Which setup matches Databricks guidance for a production Git folder that automation keeps up to date?", ["A service principal with a Git credential runs the update; most users get run-only access", "An admin's personal access token runs the update; all project users get Can Edit", "Each developer's own Git credential runs the update; project users get Can Manage", "A shared user account runs the update; all workspace users get Can Manage"], "Databricks recommends a service principal with a Git credential for the repo, restricting production folders to run-only for most users and edit rights to admins and service principals.", "https://docs.databricks.com/aws/en/repos/ci-cd-techniques-with-repos"],
+[8, "Databricks recommends that production jobs reference a remote Git repository rather than a Git folder path. How does a remote Git source behave at run time?", ["It snapshots the given branch, tag or commit at run start, and all tasks use one commit", "Each task pulls the newest commit when it starts, so tasks can use different commits", "Code is copied into the workspace when the job is created and is never refreshed", "The job runs from the job owner's Git folder on whichever branch is checked out"], "Databricks takes a snapshot of the specified reference when a run starts, and all tasks in a job must reference the same commit.", "https://docs.databricks.com/aws/en/jobs/git"],
+[8, "A notebook task uses a remote Git source and fails when it writes a temporary file into the repository's workspace path. Where should it write data instead?", ["Driver ephemeral storage for temporary data, or a volume or table for persistent data", "The job owner's Git folder, which is writable by tasks using a remote Git source", "A workspace file next to the notebook, after enabling sparse checkout on the source", "The repository root, after switching the Git reference from a branch to a tag"], "Tasks that use a remote repository cannot write to workspace files; write temporary data to driver ephemeral storage and persistent data to a volume or table.", "https://docs.databricks.com/aws/en/jobs/git"],
+[8, "After pulling a teammate's changes into your Git folder, a notebook's cell outputs and widgets are gone. What explains this?", ["Git operations that pull upstream changes clear the notebook state", "A pull in a Git folder runs `git reset --hard` on the working branch", "Notebook outputs are removed from Git folders after 30 days on disk", "Widgets are stored only on the default branch of the Git folder"], "Git operations that alter notebook source, such as pulling upstream changes, clear notebook state including outputs and widgets.", "https://docs.databricks.com/aws/en/repos/git-operations-with-repos"]
+);
+
+PBANK.push(
+// ---------- Section 5: Cost & Performance Optimization ----------
+// Objective: managed tables, predictive optimization, liquid clustering reduce overhead
+[5, "A platform team enables predictive optimization at the catalog level. The catalog holds Unity Catalog managed Delta tables and several external Delta tables registered on S3 paths. Which tables will predictive optimization maintain?",
+ ["Only the Unity Catalog managed tables", "All managed and external tables in the catalog", "Only the external tables registered on S3 paths", "Only tables that already use liquid clustering"],
+ "Predictive optimization runs only on Unity Catalog managed tables. It does not run on external tables or on tables loaded into a workspace as sharing recipients.",
+ "https://docs.databricks.com/aws/en/optimizations/predictive-optimization"],
+[5, "A data owner wants predictive optimization for every table in schema `sales.core`, while leaving the rest of the `sales` catalog at its current setting. Which statement does this?",
+ ["`ALTER SCHEMA sales.core ENABLE PREDICTIVE OPTIMIZATION`", "`ALTER SCHEMA sales.core SET DBPROPERTIES ('predictiveOptimization' = 'true')`", "`ALTER CATALOG sales INHERIT PREDICTIVE OPTIMIZATION FOR SCHEMA core`", "`SET spark.databricks.predictiveOptimization.enabled = true` in each job"],
+ "Predictive optimization is set with `ALTER CATALOG | SCHEMA | TABLE ... { ENABLE | DISABLE | INHERIT } PREDICTIVE OPTIMIZATION`. The object owner or a user with MANAGE can run it.",
+ "https://docs.databricks.com/aws/en/optimizations/predictive-optimization"],
+[5, "A nightly Lakeflow Job runs `OPTIMIZE` on a liquid clustered Unity Catalog managed table. Predictive optimization has just been enabled for that table. What does Databricks recommend doing with the nightly job?",
+ ["Disable the scheduled OPTIMIZE job", "Change it to run `OPTIMIZE FULL` every night", "Keep it and add `ZORDER BY` on the clustering keys", "Move it to run every hour instead of nightly"],
+ "With predictive optimization, OPTIMIZE runs automatically on the table, so Databricks recommends disabling scheduled OPTIMIZE jobs. Scheduled jobs are only needed without predictive optimization.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "A managed table was maintained for years with `OPTIMIZE ... ZORDER BY (customer_id)`. Predictive optimization is now enabled on it. How does predictive optimization treat the Z-ordering?",
+ ["It runs OPTIMIZE without ZORDER and ignores Z-ordered files", "It reruns ZORDER BY using the last Z-order columns", "It converts the Z-order columns into clustering keys", "It skips the table until ZORDER is removed manually"],
+ "Predictive optimization's OPTIMIZE does not run ZORDER, so Z-ordered files are ignored. Liquid clustering is the layout that predictive optimization maintains.",
+ "https://docs.databricks.com/aws/en/optimizations/predictive-optimization"],
+[5, "A FinOps analyst wants to see which maintenance operations predictive optimization ran on each table, plus their cost and impact. Which source should they query?",
+ ["`system.storage.predictive_optimization_operations_history`", "`system.billing.predictive_optimization_usage`", "`system.compute.maintenance_operations`", "`system.access.table_maintenance_log`"],
+ "The `system.storage.predictive_optimization_operations_history` system table tracks predictive optimization operations, costs and impact. Predictive optimization runs on serverless jobs compute and is billed under a serverless jobs SKU.",
+ "https://docs.databricks.com/aws/en/optimizations/predictive-optimization"],
+
+// Objective: choose deletion vectors, liquid clustering, CLUSTER BY AUTO
+[5, "A Unity Catalog managed table is queried by many teams, and their filter columns change every few months. Predictive optimization is enabled. The engineers don't want to choose or revisit clustering keys. What should they do?",
+ ["Run `ALTER TABLE t CLUSTER BY AUTO`", "Run `ALTER TABLE t CLUSTER BY NONE` and rely on ingestion order", "Partition the table by the most common filter column", "Schedule `OPTIMIZE t ZORDER BY` on all filter columns"],
+ "Automatic liquid clustering analyzes the query workload, picks clustering keys and adapts them as query patterns change. Predictive optimization handles key selection and clustering.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "Which requirement must a Delta table meet to use automatic liquid clustering (`CLUSTER BY AUTO`)?",
+ ["It is a Unity Catalog managed table with predictive optimization enabled", "It is an external table with change data feed enabled", "It is a partitioned table with deletion vectors turned off", "It is a table read only through SQL warehouses"],
+ "Automatic liquid clustering needs Unity Catalog managed tables, Databricks Runtime 15.4 LTS or above for Delta tables, and predictive optimization enabled.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "A table uses `CLUSTER BY AUTO`. An engineer recreates it with `CREATE OR REPLACE TABLE t (...)` and no CLUSTER BY clause. What happens to automatic clustering?",
+ ["It is turned off and previously selected keys are dropped", "It stays on and the previously selected keys are reused", "The statement fails until `CLUSTER BY NONE` is run first", "The keys are kept but OPTIMIZE no longer runs on the table"],
+ "A `CREATE OR REPLACE` statement without `CLUSTER BY AUTO` turns off automatic clustering and drops the previously selected columns. Include `CLUSTER BY AUTO` to keep it.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "A Delta table has deletion vectors enabled. A job runs `DELETE FROM events WHERE device_id = 42`, touching a few rows in many large Parquet files. What does the DELETE do to those files?",
+ ["Records the removed rows in deletion vectors and leaves the files unchanged for now", "Rewrites every affected Parquet file without the deleted rows", "Moves the deleted rows into a separate folder for VACUUM to remove", "Marks each affected file as removed and rewrites it at the next read"],
+ "Deletion vectors record changes in metadata and readers apply them at query time. Files are rewritten later by OPTIMIZE, `REORG TABLE ... APPLY (PURGE)` or auto-compaction.",
+ "https://docs.databricks.com/aws/en/delta/deletion-vectors"],
+[5, "A team enables `delta.enableDeletionVectors` on a table that is also read by an external client whose Delta version does not support deletion vectors. What is the effect?",
+ ["The table protocol is upgraded and that client can no longer read the table", "The client sees deleted rows until the next VACUUM runs", "Databricks keeps a compatibility copy of the table without deletion vectors", "Nothing changes for that client until the first OPTIMIZE runs"],
+ "Enabling deletion vectors upgrades the table protocol, so clients that don't support them can't read the table. In Databricks Runtime 16.4 LTS and above you can drop the feature for compatibility.",
+ "https://docs.databricks.com/aws/en/delta/deletion-vectors"],
+
+// Objective: disk cache (formerly Delta cache)
+[5, "An engineer mentions the 'Delta cache' for an iterative job that rereads the same Delta table. What is this feature called in current Databricks docs, and what does it store?",
+ ["The disk cache; local copies of remote Parquet data on worker nodes", "The Delta cache; in-memory copies of DataFrames marked with `cache()`", "The result cache; final query results stored in the workspace", "The disk cache; copies of the Delta transaction log in cloud storage"],
+ "The Delta cache (also called the DBIO cache) was renamed the disk cache. It stores copies of remote Parquet files, including Delta tables, on the workers' local storage in a fast intermediate format.",
+ "https://docs.databricks.com/aws/en/optimizations/disk-cache"],
+[5, "How does the disk cache differ from the Apache Spark cache?",
+ ["The disk cache fills automatically on first read; the Spark cache needs explicit code", "The Spark cache fills automatically on first read; the disk cache needs explicit code", "The disk cache works for any DataFrame; the Spark cache only for Parquet files", "Both caches need `CACHE TABLE` before the first read of a table"],
+ "The disk cache is triggered automatically on first read of Parquet data when enabled. The Spark cache needs code changes such as cache() or persist() and works for any DataFrame or RDD.",
+ "https://docs.databricks.com/aws/en/optimizations/disk-cache"],
+[5, "A cluster has the disk cache enabled and repeatedly reads a Delta table. Another job then runs a MERGE that rewrites some of the table's files. What must the reading cluster do to avoid stale results?",
+ ["Nothing, because the cache detects changed files and drops stale entries", "Run `CLEAR CACHE` before every read of the table", "Restart the cluster so that the cached files are evicted", "Toggle `spark.databricks.io.cache.enabled` off and on again"],
+ "The disk cache detects when data files are created, deleted, modified or overwritten and updates itself. You don't need to invalidate cached data manually.",
+ "https://docs.databricks.com/aws/en/optimizations/disk-cache"],
+[5, "From a notebook, an engineer wants to check whether the disk cache is turned on for the current cluster. Which configuration should they read with `spark.conf.get`?",
+ ["`spark.databricks.io.cache.enabled`", "`spark.databricks.delta.cache.enabled`", "`spark.databricks.io.cache.maxDiskUsage`", "`spark.sql.inMemoryColumnarStorage.enabled`"],
+ "`spark.databricks.io.cache.enabled` turns the disk cache on or off. `maxDiskUsage` only sets disk space per node, and turning the cache off doesn't delete data already cached.",
+ "https://docs.databricks.com/aws/en/optimizations/disk-cache"],
+[5, "To warm up a dashboard, an engineer adds `CACHE SELECT * FROM sales.orders` to a query that runs on a SQL warehouse. What happens?",
+ ["The command is ignored and an enhanced disk caching algorithm is used", "The table is loaded into the disk cache of every warehouse cluster", "The table is pinned in memory until the warehouse stops", "The statement fails because it needs classic compute"],
+ "In SQL warehouses and Databricks Runtime 14.2 and above, `CACHE SELECT` is ignored and an enhanced disk caching algorithm is used instead.",
+ "https://docs.databricks.com/aws/en/optimizations/disk-cache"],
+
+// Objective: Change Data Feed
+[5, "A downstream team needs row-level changes from the existing Delta table `silver.orders`. Which statement turns on change data feed for it?",
+ ["`ALTER TABLE silver.orders SET TBLPROPERTIES (delta.enableChangeDataFeed = true)`", "`ALTER TABLE silver.orders SET TBLPROPERTIES (delta.enableChangeLog = true)`", "`ALTER TABLE silver.orders ENABLE CHANGE DATA FEED`", "`SET spark.databricks.delta.cdf.enabled = true` before each write"],
+ "Change data feed is enabled with the `delta.enableChangeDataFeed` table property, at CREATE TABLE or with ALTER TABLE SET TBLPROPERTIES.",
+ "https://docs.databricks.com/aws/en/delta/delta-change-data-feed"],
+[5, "A job reads the change data feed of `silver.customers` and should apply only the new values of inserted and updated rows. Deletes and before-update values are handled elsewhere. Which filter fits?",
+ ["`_change_type IN ('insert', 'update_postimage')`", "`_change_type IN ('insert', 'update_preimage')`", "`_change_type IN ('insert', 'update')`", "`_change_type <> 'delete'`"],
+ "`_change_type` takes insert, update_preimage, update_postimage or delete. The postimage holds the row after the update; filtering on `<> 'delete'` would also return preimages.",
+ "https://docs.databricks.com/aws/en/delta/delta-change-data-feed"],
+[5, "An engineer runs `SELECT * FROM table_changes('silver.orders', 5, 10)`. Which table versions are included?",
+ ["Versions 5 through 10, both included", "Versions 5 through 9, excluding 10", "Versions 6 through 10, excluding 5", "Only the net change between 5 and 10"],
+ "Start and end versions are inclusive in change data feed reads. If the ending version is omitted, the read goes up to the latest version.",
+ "https://docs.databricks.com/aws/en/delta/delta-change-data-feed"],
+[5, "A new Structured Streaming query reads `spark.readStream.option('readChangeFeed', 'true').table('silver.orders')` with no starting version. What does it return first?",
+ ["The current table snapshot as insert records, then later changes", "Only changes committed after the stream was started", "Every change since change data feed was enabled", "An error, because a starting version is required"],
+ "On first start, a CDF stream returns the current snapshot as INSERT records and then future changes. Set `startingVersion` to skip records already in the target; only batch reads require a starting version.",
+ "https://docs.databricks.com/aws/en/delta/delta-change-data-feed"],
+[5, "An audit team plans to use a table's change data feed as the permanent history of every change since the table was created. Why won't this work?",
+ ["Change records follow table retention, and VACUUM removes change data files", "Change data feed records inserts only, not updates or deletes", "Change data feed keeps changes only for the last 10 versions", "Change data feed can't be read again after OPTIMIZE runs"],
+ "Change data feed is not a permanent history. Change data files follow the table's retention policy and VACUUM deletes them; to keep changes, write them to a target table.",
+ "https://docs.databricks.com/aws/en/delta/delta-change-data-feed"],
+
+// Objective: query profile
+[5, "An analyst wants the query profile of a dashboard query, but Query History shows no profile because the result came from the query cache. What is a simple way to get a profile?",
+ ["Rerun the query with a trivial change, such as a different LIMIT", "Turn on verbose mode from the profile's kebab menu", "Ask for CAN MANAGE on the SQL warehouse", "Import the profile JSON from the dashboard settings"],
+ "Queries served from the query cache have no profile. Making a trivial change, such as changing or removing the LIMIT, forces a real run that produces one.",
+ "https://docs.databricks.com/aws/en/sql/user/queries/query-profile"],
+[5, "A table is liquid clustered on `customer_id`. A slow query filters only on `order_date`, and its scan reads most of the table's bytes. Which query performance insight describes this?",
+ ["COVERAGE_FILTER_KEYS_CLUSTERING", "DATA_SKEW", "EXPLODING_JOIN", "WIDE_PROJECTION"],
+ "COVERAGE_FILTER_KEYS_CLUSTERING means the scan doesn't filter on the table's clustering keys, so it reads more data than needed. Adding filters on clustering keys reduces bytes read.",
+ "https://docs.databricks.com/aws/en/sql/user/queries/performance-insights"],
+[5, "In a query profile, a join operator outputs far more rows than it reads from its inputs and dominates time spent. What is the recommended fix for this insight?",
+ ["Refine the join condition or reduce input rows on both sides", "Use a larger SQL warehouse so the join does not spill", "Enable predictive optimization on both joined tables", "Raise the warehouse's maximum number of clusters"],
+ "This is the EXPLODING_JOIN insight. Work out which results you need, then refine the join condition or reduce input rows from both sides.",
+ "https://docs.databricks.com/aws/en/sql/user/queries/performance-insights"],
+[5, "A query profile shows the COVERAGE_STATS_DELTA insight for a filter on `region`, the 40th column of a Unity Catalog external Delta table. What fixes the data-skipping gap?",
+ ["Add `region` to `delta.dataSkippingStatsColumns`, then run `ANALYZE TABLE ... COMPUTE DELTA STATISTICS`", "Set `spark.sql.shuffle.partitions` to auto and rerun the query", "Run `OPTIMIZE ... ZORDER BY (region)` without collecting statistics", "Set `delta.dataSkippingNumIndexedCols` to 0 and rerun the query"],
+ "External tables collect stats on the first 32 columns by default. `delta.dataSkippingStatsColumns` adds the column for future writes, and `ANALYZE TABLE ... COMPUTE DELTA STATISTICS` recomputes stats for existing data.",
+ "https://docs.databricks.com/aws/en/delta/data-skipping"],
+[5, "A query profile shows a sort-merge join with a shuffle on both sides, but at runtime one side turns out to be small. With default settings, how can Databricks change this join?",
+ ["AQE switches it to a broadcast hash join if that side is under 30MB", "AQE switches it to a shuffle hash join if that side is under 256MB", "Photon switches it to a nested loop join if that side is under 64MB", "Predictive optimization rewrites the join after the query finishes"],
+ "Adaptive query execution is on by default and can convert sort-merge joins to broadcast hash joins at runtime. The threshold is `spark.databricks.adaptive.autoBroadcastJoinThreshold`, default 30MB.",
+ "https://docs.databricks.com/aws/en/optimizations/aqe"],
+
+// Objective: liquid clustering vs partitioning / ZORDER
+[5, "A new Delta table will hold about 600 GB and is filtered on `event_date` and `device_id`. Which layout follows Databricks guidance?",
+ ["No partitioning; liquid clustering on event_date and device_id", "Partition by event_date and Z-order by device_id", "Partition by device_id and Z-order by event_date", "Partition by event_date and cluster by device_id"],
+ "Databricks advises not partitioning tables under 1 TB and recommends liquid clustering for new tables. Liquid clustering can't be combined with partitioning or ZORDER.",
+ "https://docs.databricks.com/aws/en/tables/partitions"],
+[5, "A table is partitioned by `region` and Z-ordered by `customer_id`. When moving it to liquid clustering, which clustering keys does Databricks recommend?",
+ ["Both `region` and `customer_id`", "Only `customer_id`", "Only `region`", "A hashed bucket column built from `customer_id`"],
+ "For tables that use both partitioning and Z-order, the guidance is to use both the partition columns and the ZORDER BY columns as clustering keys.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "A legacy table is partitioned by a generated `event_day` column derived from the `event_ts` timestamp. When converting it to liquid clustering, which key should be used?",
+ ["`event_ts`, without creating the generated column", "`event_day`, keeping the generated column", "Both `event_day` and `event_ts`", "A new generated `event_hour` column"],
+ "For a generated lower-cardinality column such as a date from a timestamp, use the original column as the clustering key and don't create the generated column.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "On a 20 TB liquid clustered table, an engineer runs `ALTER TABLE t CLUSTER BY (country, product_id)` to replace the old keys. What happens to the existing data?",
+ ["It stays as is until `OPTIMIZE t FULL` reclusters it", "It is rewritten right away by the ALTER TABLE statement", "It is rewritten by the next VACUUM on the table", "It can't be read until the next OPTIMIZE finishes"],
+ "Changing clustering keys affects later OPTIMIZE runs and writes but doesn't rewrite existing data. `OPTIMIZE ... FULL` reclusters it, which can take hours on large tables.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+[5, "A large Unity Catalog managed Delta table is partitioned by `sale_date`. The team wants to move it to liquid clustering in place on Databricks Runtime 18.1 and let predictive optimization adapt the keys over time. Which statement fits?",
+ ["`ALTER TABLE t REPLACE PARTITIONED BY WITH CLUSTER BY AUTO`", "`ALTER TABLE t DROP PARTITIONED BY ADD CLUSTER BY AUTO`", "`ALTER TABLE t CLUSTER BY AUTO PARTITIONED BY NONE`", "`OPTIMIZE t ZORDER BY AUTO`"],
+ "`REPLACE PARTITIONED BY WITH CLUSTER BY AUTO` starts from the current partition columns and lets predictive optimization adapt them. It needs Databricks Runtime 18.1+ and works only on Unity Catalog managed tables.",
+ "https://docs.databricks.com/aws/en/delta/clustering"],
+
+// ---------- Section 6: Ensuring Data Security and Compliance ----------
+// Objective: least-privilege ACLs
+[6, "The `analysts` group needs to query only the table `prod.sales.orders`. Which set of grants follows least privilege?",
+ ["SELECT on the table, USE SCHEMA on `prod.sales`, USE CATALOG on `prod`", "SELECT on the table only, with no grants on the parent objects", "ALL PRIVILEGES on the schema `prod.sales` and USE CATALOG on `prod`", "USE CATALOG and SELECT on the whole `prod` catalog"],
+ "Reading a table needs SELECT on the table plus USE CATALOG and USE SCHEMA on its parents. Granting SELECT higher up would cover every current and future table below.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges"],
+[6, "A platform engineer must investigate slow queries that other users ran on a SQL warehouse, including their query profiles, without being able to manage or change the warehouse. Which warehouse permission fits?",
+ ["CAN MONITOR", "CAN USE", "CAN MANAGE", "IS OWNER"],
+ "Viewing another user's query profile requires CAN MONITOR on the SQL warehouse that ran it (or being the query owner). CAN MANAGE and IS OWNER grant more than needed.",
+ "https://docs.databricks.com/aws/en/sql/user/queries/query-profile"],
+[6, "A data steward is granted MANAGE on a table so they can administer its grants. When they query the table, they get a permission error. Why?",
+ ["MANAGE doesn't grant SELECT; they must grant it to themselves explicitly", "MANAGE applies only to catalogs and schemas, not to tables", "MANAGE takes effect only after ownership is transferred to them", "MANAGE gives data access only on external tables"],
+ "A user with MANAGE isn't automatically granted every privilege and must grant themselves each one explicitly. They still need the usage privileges on the parent catalog and schema.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges"],
+
+// Objective: ABAC with governed tags
+[6, "A governance team writes an ABAC row filter policy on a catalog. The UDF must receive whichever column in each table carries the governed tag `region`. Which clauses do this?",
+ ["`MATCH COLUMNS has_tag('region') AS rgn` with `USING COLUMNS (rgn)`", "`WHEN has_tag('region')` with `ON COLUMN region`", "`FOR COLUMNS TAGGED 'region'` with `USING (region)`", "`MATCH TABLES has_tag('region')` with `ON (rgn)`"],
+ "MATCH COLUMNS selects columns by tag and gives them an alias, and USING COLUMNS passes aliases or literals to the UDF. WHEN tests table tags, and policies must use governed tags.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/policies"],
+[6, "After an ABAC policy is attached to a schema, a Lakeflow Job on standard compute with Databricks Runtime 15.4 LTS can no longer read its tables. What resolves this?",
+ ["Move the job to Runtime 16.4+ or serverless, or add its principal to the policy's EXCEPT clause", "Grant the job's principal MANAGE on each table covered by the policy", "Switch the job to dedicated access mode on the same runtime", "Remove the governed tags from the tables while the job runs"],
+ "Standard and dedicated compute below Runtime 16.4 can't access ABAC-secured tables. Upgrade the compute, or scope the policy and add the older-runtime principal to EXCEPT.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/requirements"],
+[6, "Two ABAC column mask policies on the same schema both match the `email` column for the same user, and they call different masking UDFs. What happens when that user queries the table?",
+ ["Access is blocked and the query returns an error", "The more restrictive of the two masks is applied", "The policy created most recently takes precedence", "Both masks are applied one after the other"],
+ "Only one distinct column mask can resolve per user and column. If distinct masks apply, Databricks blocks access with an error, unless they resolve to the same UDF and arguments.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/requirements"],
+
+// Objective: anonymization and pseudonymization
+[6, "Analysts must join two tables on customer email but must never see real email addresses. Which column mask design supports the join?",
+ ["A DETERMINISTIC UDF returning `SHA2(CONCAT(val, CAST(version AS STRING)), 256)`", "A UDF that returns the constant `'***'` for every non-admin user", "A UDF that returns `uuid()` in place of each email value", "A UDF that returns NULL for every user outside the admins group"],
+ "A deterministic hash is pseudonymization: the same input always gives the same output, so joins still work. The version argument lets you rotate keys through USING COLUMNS.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/common-patterns"],
+[6, "A column mask on a DOUBLE `salary` column returns the exact value to HR, `ROUND(salary / 1000) * 1000` to managers, and should hide it from everyone else. Which statement about this mask is correct?",
+ ["Every branch must return a value castable to DOUBLE, so `'CONFIDENTIAL'` would fail", "Masks always return STRING, so the salary is cast to STRING automatically", "Any return type works because masks are applied after the query finishes", "Rounding isn't allowed in masks; only constants and NULL are allowed"],
+ "A mask's return type must match or be castable to the column type. Rounding to the nearest thousand generalizes the value, and a fallback like `0.0` keeps the type valid.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/common-patterns"],
+[6, "A customer makes a GDPR right-to-be-forgotten request. A colleague suggests applying a hashing column mask to their PII instead of deleting it. What does Databricks guidance say?",
+ ["Delete the data, since complete erasure is the safest option", "Masking is enough, since masked values are never stored in files", "Hashing is enough if it uses SHA-256 with a version argument", "Masking is enough if time travel is disabled on the table"],
+ "Databricks lists pseudonymization and masking as options but says the safest option is complete erasure, because removing reidentification risk often requires full deletion.",
+ "https://docs.databricks.com/aws/en/security/privacy/gdpr-delta"],
+
+// Objective: compliant PII pipeline across batch and streaming
+[6, "A company wants PII columns in new tables, including streaming tables loaded by Lakeflow pipelines, to be detected and masked across a catalog without manual work per table. Which approach fits?",
+ ["Data Classification with auto-tagging, plus an ABAC mask policy matching the `class.*` tags", "Table-level masks added by each owner after a monthly manual review", "A dynamic view per table that hashes every string column", "Change data feed with a filter that drops rows containing PII"],
+ "Data Classification scans tables, streaming tables and materialized views and applies governed `class.*` tags. An ABAC policy on those tags then masks matching columns automatically.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-classification"],
+[6, "Data Classification is enabled on a catalog. Where are its results stored, and how soon are newly created tables usually scanned?",
+ ["`system.data_classification.results`; new tables are usually scanned within 24 hours", "`system.data_classification.results`; new tables are scanned as part of each write", "`system.access.pii_detections`; new tables are usually scanned within 24 hours", "`system.access.pii_detections`; new tables are scanned only on manual full scans"],
+ "Results are stored in `system.data_classification.results`, which contains sample values. Scanning is incremental, and new tables and columns are typically scanned within 24 hours.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-classification"],
+[6, "A Lakeflow pipeline builds a materialized view from a source table protected by an ABAC column mask. The pipeline's run-as identity is subject to that mask. What is the result, and the recommended fix?",
+ ["The view stores masked data permanently; add the run-as identity to EXCEPT on source policies", "The view stores unmasked data; add a column mask to the view as well", "The refresh fails; grant the run-as identity MANAGE on the source table", "The view stores unmasked data; run the pipeline on dedicated compute"],
+ "Refreshes run as the pipeline owner or run-as identity. If that identity is masked, the stored data is masked permanently, so add it to the EXCEPT clause of policies on the source tables.",
+ "https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/requirements"],
+[6, "A streaming table in a Lakeflow pipeline has a column mask that calls `is_account_group_member('hr')`. How is that function evaluated?",
+ ["As the pipeline owner during refresh, and as the querying user at query time", "As the querying user both during refresh and at query time", "As the pipeline owner both during refresh and at query time", "As the workspace admin during refresh, and as the owner at query time"],
+ "During refresh, filter and mask functions run with the pipeline owner's rights. At query time, user-context functions are evaluated for the invoker. Filters and masks are changed through `CREATE OR REFRESH`.",
+ "https://docs.databricks.com/aws/en/ldp/unity-catalog"],
+
+// Objective: data purging for retention and erasure
+[6, "A Delta table with deletion vectors enabled holds a customer's PII that must be erased physically. Which sequence removes it from storage?",
+ ["DELETE the rows, run `REORG TABLE ... APPLY (PURGE)`, then VACUUM", "DELETE the rows, then run VACUUM with default settings only", "DELETE the rows, then run `OPTIMIZE ... ZORDER BY (customer_id)`", "Run `REORG TABLE ... APPLY (PURGE)` first, then DELETE the rows"],
+ "With deletion vectors, DELETE is a soft delete. `REORG TABLE ... APPLY (PURGE)` rewrites the files, and VACUUM then removes the old files that still hold the data.",
+ "https://docs.databricks.com/aws/en/security/privacy/gdpr-delta"],
+[6, "A streaming table reads from a Delta source. To meet an erasure request, user rows are deleted from both the source and the streaming table with DML. How should the streaming read change so it keeps running without a full refresh?",
+ ["Add `.option('skipChangeCommits', 'true')` to the streaming read", "Add `.option('readChangeFeed', 'true')` to the streaming read", "Add `.option('ignoreDeletes', 'false')` to the streaming read", "Set `startingVersion` to the version of the delete commit"],
+ "Updates or deletes in a Delta source break an append-only stream. `skipChangeCommits` makes the stream skip anything other than inserts, avoiding a full refresh that may lose data past upstream retention.",
+ "https://docs.databricks.com/aws/en/security/privacy/gdpr-delta"],
+[6, "A team deletes user records from a Delta table and runs `VACUUM` with default settings. Which files does VACUUM remove?",
+ ["Files no longer referenced by the table that were removed over 7 days ago", "All files not referenced by the current version, regardless of age", "Files no longer referenced by the table that were removed over 30 days ago", "Only transaction log entries that are older than 30 days"],
+ "VACUUM's default retention threshold is 7 days, set by `delta.deletedFileRetentionDuration`. After VACUUM you can no longer time travel to versions older than the retention period.",
+ "https://docs.databricks.com/aws/en/sql/language-manual/delta-vacuum"]
+);
+
+</script>
+<script>
 (function () {
-const SECTIONS = { 1: "Platform", 2: "Ingestion", 3: "Transform", 4: "Jobs", 5: "CI/CD", 6: "Optimize", 7: "Governance" };
-const WEIGHT = { 1: 6, 2: 21, 3: 22, 4: 16, 5: 10, 6: 10, 7: 15 };
-const EXAM_SPLIT = { 1: 3, 2: 9, 3: 10, 4: 7, 5: 5, 6: 4, 7: 7 };
+const KEYS = {"assoc": "de-associate-practice-v1", "pro": "de-professional-practice-v1", "choice": "de-practice-exam"};
+const EXAMS = {
+  assoc: {
+    title: "Data Engineer Associate Practice", bank: BANK, links: LINKS, total: 45, minutes: 90,
+    sections: { 1: "Platform", 2: "Ingestion", 3: "Transform", 4: "Jobs", 5: "CI/CD", 6: "Optimize", 7: "Governance" },
+    weight: { 1: 6, 2: 21, 3: 22, 4: 16, 5: 10, 6: 10, 7: 15 },
+    split: { 1: 3, 2: 9, 3: 10, 4: 7, 5: 5, 6: 4, 7: 7 },
+  },
+  pro: {
+    title: "Data Engineer Professional Practice", bank: PBANK, links: {}, total: 60, minutes: 120,
+    sections: { 1: "Code", 2: "Ingestion", 3: "Manipulation", 4: "Monitoring", 5: "Cost & perf", 6: "Security", 7: "Governance", 8: "Debug & deploy", 9: "Modeling" },
+    weight: { 1: 23, 2: 12, 3: 12, 4: 10, 5: 15, 6: 8, 7: 5, 8: 10, 9: 5 },
+    split: { 1: 14, 2: 7, 3: 7, 4: 6, 5: 9, 6: 5, 7: 3, 8: 6, 9: 3 },
+  },
+};
 const LETTERS = ["A", "B", "C", "D"];
-const KEY = "de-associate-practice-v1";
 const $ = (id) => document.getElementById(id);
 
 // ---- persistence (per-browser convenience only) ----
-let store = { stats: {}, retry: {}, filter: "all" };
-try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
-function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+let examId = "assoc";
+try { const e = localStorage.getItem(KEYS.choice); if (e && EXAMS[e] && EXAMS[e].bank.length) examId = e; } catch (e) {}
+let X = EXAMS[examId], BANKX = X.bank;
+let store;
+function loadStore() {
+  store = { stats: {}, retry: {}, filter: "all" };
+  try { const raw = localStorage.getItem(KEYS[examId]); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
+  if (store.filter !== "all" && store.filter !== "missed" && !X.sections[store.filter]) store.filter = "all";
+}
+function save() { try { localStorage.setItem(KEYS[examId], JSON.stringify(store)); } catch (e) {} }
+loadStore();
 
 // ---- helpers ----
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -1084,6 +1939,7 @@ const rand = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 const stat = (id) => store.stats[id] || (store.stats[id] = { c: 0, w: 0 });
+const link = (q) => (/^https?:/.test(q[4]) ? q[4] : X.links[q[4]]);
 
 // ---- session ----
 let mode = "drill";
@@ -1091,10 +1947,10 @@ let session = { answered: 0, correct: 0, time: 0 };
 let queue = [], cur = null, perm = null, picked = null, shownAt = 0, lastId = null;
 
 function pool() {
-  const ids = BANK.map((_, i) => i);
+  const ids = BANKX.map((_, i) => i);
   if (store.filter === "missed") return ids.filter((i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0));
   if (store.filter === "all") return ids;
-  return ids.filter((i) => BANK[i][0] === Number(store.filter));
+  return ids.filter((i) => BANKX[i][0] === Number(store.filter));
 }
 function buildQueue() {
   const p = pool();
@@ -1140,13 +1996,12 @@ function answer(slot) {
 
 // ---- drill render ----
 function renderDrill() {
-  const q = BANK[cur], s = store.stats[cur];
+  const q = BANKX[cur], s = store.stats[cur];
   const isRepeat = store.retry[cur] > 0 && picked === null;
-  let h = `<div class="meta"><span class="tag">S${q[0]} · ${SECTIONS[q[0]]}</span>`;
+  let h = `<div class="meta"><span class="tag">S${q[0]} · ${X.sections[q[0]]}</span>`;
   if (isRepeat) h += `<span class="tag repeat">Repeat of a miss</span>`;
   if (s) h += `<span>seen ${s.c + s.w}× · missed ${s.w}×</span>`;
   h += `</div><p class="q">${fmt(q[1])}</p>`;
-  if (q[5]) h += `<pre><code>${esc(q[5])}</code></pre>`;
   h += `<div class="opts">`;
   perm.forEach((oi, slot) => {
     let cls = "opt";
@@ -1155,8 +2010,8 @@ function renderDrill() {
   });
   h += `</div>`;
   if (picked !== null) {
-    const ok = perm[picked] === 0;
-    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${LINKS[q[4]]}" target="_blank" rel="noopener">${LINKS[q[4]].replace("https://", "")}</a>`;
+    const ok = perm[picked] === 0, url = link(q);
+    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
     if (!ok) h += `<div class="small" style="margin-top:4px">This one will come back in a few questions.</div>`;
     h += `</div><div class="actions"><button class="btn" id="next">Next question</button><span class="hint">Enter or Space</span></div>`;
   } else {
@@ -1171,16 +2026,16 @@ function renderEmpty() {
   cur = null;
 }
 
-// ---- timed 45 ----
+// ---- timed mock ----
 let exam = null, tick = null;
 function startExam() {
   const ids = [];
-  Object.entries(EXAM_SPLIT).forEach(([sec, n]) => {
-    const p = shuffle(BANK.map((_, i) => i).filter((i) => BANK[i][0] === Number(sec)));
+  Object.entries(X.split).forEach(([sec, n]) => {
+    const p = shuffle(BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)));
     p.sort((a, b) => (store.stats[a] ? 1 : 0) - (store.stats[b] ? 1 : 0)); // prefer unseen
     ids.push(...p.slice(0, n));
   });
-  exam = { ids: shuffle(ids), perms: ids.map(() => shuffle([0, 1, 2, 3])), picks: ids.map(() => null), i: 0, end: Date.now() + 90 * 60000, done: false };
+  exam = { ids: shuffle(ids), perms: ids.map(() => shuffle([0, 1, 2, 3])), picks: ids.map(() => null), i: 0, end: Date.now() + X.minutes * 60000, done: false };
   clearInterval(tick); tick = setInterval(renderTimer, 1000);
   renderExam();
 }
@@ -1192,11 +2047,12 @@ function renderTimer() {
 }
 function renderExam() {
   if (exam.done) return renderResults();
-  const id = exam.ids[exam.i], q = BANK[id], p = exam.perms[exam.i], pick = exam.picks[exam.i];
-  let h = `<div class="meta"><span class="tag">Question ${exam.i + 1} of 45</span><span class="timer" id="timer"></span></div><p class="q">${fmt(q[1])}</p><div class="opts">`;
+  const n = exam.ids.length, last = n - 1;
+  const id = exam.ids[exam.i], q = BANKX[id], p = exam.perms[exam.i], pick = exam.picks[exam.i];
+  let h = `<div class="meta"><span class="tag">Question ${exam.i + 1} of ${n}</span><span class="timer" id="timer"></span></div><p class="q">${fmt(q[1])}</p><div class="opts">`;
   p.forEach((oi, slot) => { h += `<button class="opt ${pick === slot ? "sel" : ""}" data-slot="${slot}"><span class="k">${LETTERS[slot]}</span><span>${fmt(q[2][oi])}</span></button>`; });
   h += `</div><div class="actions"><button class="btn ghost" id="prev" ${exam.i === 0 ? "disabled" : ""}>Back</button>`;
-  h += exam.i < 44 ? `<button class="btn" id="fwd">Next</button>` : `<button class="btn" id="submit">Submit exam</button>`;
+  h += exam.i < last ? `<button class="btn" id="fwd">Next</button>` : `<button class="btn" id="submit">Submit exam</button>`;
   h += `<span class="hint">1–4 / A–D to pick · Enter for next · no feedback until you submit</span></div><div class="dots">`;
   exam.ids.forEach((_, k) => { h += `<button class="${exam.picks[k] !== null ? "done" : ""} ${k === exam.i ? "cur" : ""}" data-k="${k}" aria-label="Go to question ${k + 1}">${k + 1}</button>`; });
   h += `</div>`;
@@ -1213,19 +2069,20 @@ function submitExam() {
     const ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0, s = stat(id);
     session.answered++; if (ok) { s.c++; session.correct++; } else { s.w++; store.retry[id] = 2; }
   });
-  exam.took = Math.round((Date.now() - (exam.end - 90 * 60000)) / 60000);
+  exam.took = Math.round((Date.now() - (exam.end - X.minutes * 60000)) / 60000);
   save(); renderRail(); renderResults();
 }
 function renderResults() {
+  const n = exam.ids.length;
   let score = 0; const bySec = {};
-  exam.ids.forEach((id, k) => { const sec = BANK[id][0], ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0; bySec[sec] = bySec[sec] || [0, 0]; bySec[sec][1]++; if (ok) { score++; bySec[sec][0]++; } });
-  let h = `<div class="meta"><span class="tag">Timed 45 · results</span><span>${exam.took} min</span></div><p class="q">${score} / 45 (${Math.round(score / 45 * 100)}%)</p><div class="secs">`;
-  Object.keys(bySec).sort().forEach((s) => { const [c, n] = bySec[s], pc = c / n; h += `<div class="sec"><span class="n">S${s}</span><div class="bar"><i class="${pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${pc * 100}%"></i></div><span class="v">${c}/${n}</span></div>`; });
-  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed 45</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
+  exam.ids.forEach((id, k) => { const sec = BANKX[id][0], ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0; bySec[sec] = bySec[sec] || [0, 0]; bySec[sec][1]++; if (ok) { score++; bySec[sec][0]++; } });
+  let h = `<div class="meta"><span class="tag">Timed ${n} · results</span><span>${exam.took} min</span></div><p class="q">${score} / ${n} (${Math.round(score / n * 100)}%)</p><div class="secs">`;
+  Object.keys(bySec).sort((a, b) => a - b).forEach((s) => { const [c, m] = bySec[s], pc = c / m; h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${X.sections[s]}"><i class="${pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${pc * 100}%"></i></div><span class="v">${c}/${m}</span></div>`; });
+  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed mock</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
   exam.ids.forEach((id, k) => {
-    const q = BANK[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
+    const q = BANKX[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
     if (ok) return;
-    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><p class="small">${fmt(q[3])} <a href="${LINKS[q[4]]}" target="_blank" rel="noopener">Docs</a></p></div>`;
+    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><p class="small">${fmt(q[3])} <a href="${link(q)}" target="_blank" rel="noopener">Docs</a></p></div>`;
   });
   h += `</div>`;
   $("main").innerHTML = h;
@@ -1240,25 +2097,38 @@ function renderRail() {
   $("k-pace").textContent = session.answered && mode === "drill" ? Math.round(session.time / session.answered / 1000) : "–";
   $("k-due").textContent = Object.values(store.retry).filter((v) => v > 0).length;
   let h = "";
-  Object.keys(SECTIONS).forEach((s) => {
-    let c = 0, w = 0; BANK.forEach((q, i) => { if (q[0] === Number(s) && store.stats[i]) { c += store.stats[i].c; w += store.stats[i].w; } });
+  Object.keys(X.sections).forEach((s) => {
+    let c = 0, w = 0; BANKX.forEach((q, i) => { if (q[0] === Number(s) && store.stats[i]) { c += store.stats[i].c; w += store.stats[i].w; } });
     const n = c + w, pc = n ? c / n : 0;
-    h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${SECTIONS[s]}"><i class="${!n ? "" : pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${n ? pc * 100 : 0}%"></i></div><span class="v">${n ? Math.round(pc * 100) + "% · " + n : "–"}</span></div>`;
+    h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${X.sections[s]}"><i class="${!n ? "" : pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${n ? pc * 100 : 0}%"></i></div><span class="v">${n ? Math.round(pc * 100) + "% · " + n : "–"}</span></div>`;
   });
   $("secs").innerHTML = h;
   renderChips();
 }
 function renderChips() {
-  const missed = BANK.map((_, i) => i).filter((i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0)).length;
-  let h = `<button class="chip" data-f="all" aria-pressed="${store.filter === "all"}">All<span class="w">${BANK.length}</span></button>`;
-  Object.keys(SECTIONS).forEach((s) => { h += `<button class="chip" data-f="${s}" aria-pressed="${store.filter === s}">S${s} ${SECTIONS[s]}<span class="w">${WEIGHT[s]}%</span></button>`; });
+  const missed = BANKX.map((_, i) => i).filter((i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0)).length;
+  let h = `<button class="chip" data-f="all" aria-pressed="${store.filter === "all"}">All<span class="w">${BANKX.length}</span></button>`;
+  Object.keys(X.sections).forEach((s) => { h += `<button class="chip" data-f="${s}" aria-pressed="${store.filter === s}">S${s} ${X.sections[s]}<span class="w">${X.weight[s]}%</span></button>`; });
   h += `<button class="chip missed" data-f="missed" aria-pressed="${store.filter === "missed"}">Missed<span class="w">${missed}</span></button>`;
   $("chips").innerHTML = h;
   $("chips").hidden = mode !== "drill";
   $("chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { store.filter = b.dataset.f; save(); queue = []; renderChips(); nextQ(); }));
 }
 
-// ---- mode ----
+// ---- exam & mode switches ----
+function setExam(id) {
+  if (!EXAMS[id] || !EXAMS[id].bank.length) return;
+  examId = id; X = EXAMS[id]; BANKX = X.bank;
+  try { localStorage.setItem(KEYS.choice, id); } catch (e) {}
+  loadStore();
+  session = { answered: 0, correct: 0, time: 0 };
+  queue = []; cur = null; lastId = null; exam = null; clearInterval(tick);
+  $("exam-assoc").setAttribute("aria-pressed", id === "assoc"); $("exam-pro").setAttribute("aria-pressed", id === "pro");
+  $("title").textContent = X.title; document.title = X.title;
+  $("bankcount").textContent = BANKX.length + " questions";
+  $("mode-exam").textContent = "Timed " + X.total;
+  setMode(mode);
+}
 function setMode(m) {
   mode = m;
   $("mode-drill").setAttribute("aria-pressed", m === "drill"); $("mode-exam").setAttribute("aria-pressed", m === "exam");
@@ -1266,8 +2136,11 @@ function setMode(m) {
   else if (!exam || exam.done) startExam(); else { tick = setInterval(renderTimer, 1000); renderExam(); }
   renderRail();
 }
+$("exam-assoc").addEventListener("click", () => setExam("assoc"));
+$("exam-pro").addEventListener("click", () => setExam("pro"));
 $("mode-drill").addEventListener("click", () => setMode("drill"));
 $("mode-exam").addEventListener("click", () => setMode("exam"));
+if (!PBANK.length) $("exam-pro").disabled = true;
 
 // ---- keyboard ----
 document.addEventListener("keydown", (e) => {
@@ -1277,30 +2150,30 @@ document.addEventListener("keydown", (e) => {
     if (slot >= 0 && picked === null) { e.preventDefault(); answer(slot); }
     else if ((k === "enter" || k === " ") && picked !== null) { e.preventDefault(); nextQ(); }
   } else if (exam && !exam.done) {
+    const last = exam.ids.length - 1;
     if (slot >= 0) { exam.picks[exam.i] = slot; renderExam(); }
-    else if (k === "enter" && exam.i < 44) { e.preventDefault(); exam.i++; renderExam(); }
+    else if (k === "enter" && exam.i < last) { e.preventDefault(); exam.i++; renderExam(); }
     else if (k === "arrowleft" && exam.i > 0) { exam.i--; renderExam(); }
-    else if (k === "arrowright" && exam.i < 44) { exam.i++; renderExam(); }
+    else if (k === "arrowright" && exam.i < last) { exam.i++; renderExam(); }
   }
 });
 
 // ---- misses export & reset ----
 $("copy").addEventListener("click", () => {
-  const rows = BANK.map((q, i) => [q, i]).filter(([, i]) => store.stats[i] && store.stats[i].w > 0)
+  const rows = BANKX.map((q, i) => [q, i]).filter(([, i]) => store.stats[i] && store.stats[i].w > 0)
     .sort((a, b) => store.stats[b[1]].w - store.stats[a[1]].w)
     .map(([q, i]) => `S${q[0]} | missed ${store.stats[i].w}x, right ${store.stats[i].c}x | ${q[1].replace(/`/g, "")} | Answer: ${q[2][0].replace(/`/g, "")}`);
-  const text = rows.length ? "My practice misses:\n" + rows.join("\n") : "No misses yet.";
+  const text = rows.length ? `My ${X.title} misses:\n` + rows.join("\n") : "No misses yet.";
   const done = () => { $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy misses"), 1500); };
   const fallback = () => { $("copyout").innerHTML = `<textarea id="copyfallback" readonly></textarea>`; $("copyfallback").value = text; $("copyfallback").select(); };
   try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
 });
 $("reset").addEventListener("click", () => {
-  $("copyout").innerHTML = `<div class="confirm" style="margin-top:8px"><span>Clear all progress and misses?</span><button class="btn danger" id="yes">Clear</button><button class="btn ghost" id="no">Keep</button></div>`;
+  $("copyout").innerHTML = `<div class="confirm" style="margin-top:8px"><span>Clear all ${X.title} progress and misses?</span><button class="btn danger" id="yes">Clear</button><button class="btn ghost" id="no">Keep</button></div>`;
   $("yes").addEventListener("click", () => { store = { stats: {}, retry: {}, filter: "all" }; save(); session = { answered: 0, correct: 0, time: 0 }; $("copyout").innerHTML = ""; setMode(mode); });
   $("no").addEventListener("click", () => ($("copyout").innerHTML = ""));
 });
 
-$("bankcount").textContent = BANK.length + " questions";
-setMode("drill");
+setExam(examId);
 })();
 </script>

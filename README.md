@@ -1,6 +1,13 @@
-# Databricks Data Engineer Associate: Practice Drill
+# Databricks Data Engineer Practice: Associate and Professional
 
-An unofficial, single-page practice drill for the **Databricks Certified Data Engineer Associate** exam. It has 278 multiple-choice questions with instant feedback, and questions you get wrong come back until you get them right.
+An unofficial, single-page practice drill for two Databricks certifications. A toggle in the header switches between them:
+
+| Exam | Questions in the bank | Timed mock |
+|---|---|---|
+| Data Engineer **Associate** (guide of 4 May 2026, updated 6 Aug 2026) | 278 | 45 questions, 90 minutes |
+| Data Engineer **Professional** (guide of 9 Oct 2026) | 200 | 60 questions, 120 minutes |
+
+Every question has instant feedback, and questions you get wrong come back until you get them right.
 
 **Live site:** https://edxhayter.github.io/databricks-data-engineer-cert-practice/src/practice.html
 
@@ -8,14 +15,15 @@ An unofficial, single-page practice drill for the **Databricks Certified Data En
 
 ## Who built it
 
-The page, the question bank and this README were written by **Claude** (Anthropic's AI model, running in Claude Code). Edward Hayter, who was preparing for the exam, asked for the tool, answered the practice questions, pointed out the weak spots and asked for changes. The code and the questions are Claude's.
+The page, the question bank and this README were written by **Claude** (Anthropic's AI model, running in Claude Code). Edward Hayter, who was preparing for the exams, asked for the tool, answered the practice questions, pointed out the weak spots and asked for changes. The code and the questions are Claude's.
 
 ## Features
 
 - **Drill mode.** Each answer gets instant feedback, a one-line explanation and a link to the relevant docs page. Option order is shuffled every time.
 - **Misses repeat.** A wrong answer comes back 3–6 questions later and stays in rotation until you get it right twice more.
 - **Filters.** Drill the whole bank, one exam section, or only your misses. Questions you haven't seen yet come first.
-- **Timed 45.** A mock exam with the guide's section split (3 / 9 / 10 / 7 / 5 / 4 / 7), a 90-minute clock and no feedback until you submit. Its misses go back into drill mode.
+- **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses go back into drill mode.
+- **Separate progress per exam.** Each exam keeps its own history, misses and section stats.
 - **Progress tracking.** Accuracy by section, pace (seconds per answer), and a "Copy misses" button that copies your weak spots as text.
 - **Keyboard first.** Press `1`–`4` or `A`–`D` to answer, and `Enter` or `Space` for the next question.
 
@@ -35,7 +43,7 @@ It's one self-contained HTML file. Its only external request is for Google Fonts
 
 ## How it was built
 
-It was built over a few days of study sessions in Claude Code (26–30 October 2026). The process:
+It was built over several study sessions in Claude Code (26 October to 5 November 2026). The Associate process:
 
 1. **Started from the official exam guide.** Claude extracted the text of the Databricks exam guide PDF (published 4 May 2026, updated 6 August 2026). The guide set the scope: 45 scored questions in 90 minutes, across seven sections weighted 6 / 21 / 22 / 16 / 10 / 10 / 15 %. Claude was told not to invent objectives that aren't in the guide.
 2. **Set ground rules on sources.** Everything had to come from docs.databricks.com or Databricks Academy, not blogs or forums. Each key claim needed a doc page URL. Anything Claude couldn't confirm in the docs had to be flagged instead of guessed.
@@ -51,6 +59,25 @@ It was built over a few days of study sessions in Claude Code (26–30 October 2
    - every docs URL returns HTTP 200;
    - the page's script passes a syntax check.
 
+### Adding the Professional exam
+
+9. **Started again from the Professional exam guide.** Claude extracted the text of the guide PDF (published 9 October 2026): 60 scored questions in 120 minutes across nine sections weighted 23 / 12 / 12 / 10 / 15 / 8 / 5 / 10 / 5 %. The 200 questions follow those weights: 46 / 24 / 24 / 20 / 30 / 16 / 10 / 20 / 10.
+10. **Researched in parallel.** Claude split the nine sections across six sub-agents. Each one got the guide's objectives for its sections word for word and the same rules:
+    - write a question only when a docs page fetched during the task confirms the answer;
+    - cite that page;
+    - use current product names;
+    - avoid answers that give themselves away;
+    - don't copy the guide's sample questions.
+
+    Each agent also reported what it couldn't confirm and left out.
+11. **Checked the merged bank.** Claude checked that:
+    - there are 200 questions with the right count per section;
+    - each question has four distinct options and no question appears twice;
+    - no correct answer gives itself away by length or "because" wording;
+    - all 113 cited docs URLs return HTTP 200.
+
+    It then clicked through both exams in a browser.
+
 ### Known limitations
 
 - A few questions rest on Apache Spark or PySpark behaviour rather than a Databricks docs page:
@@ -61,10 +88,18 @@ It was built over a few days of study sessions in Claude Code (26–30 October 2
 
   Their links point to the Apache Spark API docs or a general page.
 - Databricks changes quickly, so defaults and preview features (marked Beta or Public Preview in the explanations) may have changed since October 2026.
-- In one place the exam guide and the docs disagree. The guide talks about creating pull requests "using Databricks Git integration", while the Git folders docs say to open them in your Git provider. The question on this explains the difference.
+- Professional gaps the research agents reported, where the docs didn't confirm enough to write questions:
+  - tokenisation (anonymisation is covered through hashing and generalisation);
+  - Databricks SDK examples for monitoring runs;
+  - Kafka and Kinesis starting-offset defaults;
+  - Iceberg as an AUTO CDC target;
+  - metric view join syntax.
+- `assertDataFrameEqual` / `assertSchemaEqual` and default window frames cite the Apache Spark docs.
+- The current docs call Delta Sharing **OpenSharing** and the Delta cache the **disk cache**, so the questions use those names.
+- In one place the Associate exam guide and the docs disagree. The guide talks about creating pull requests "using Databricks Git integration", while the Git folders docs say to open them in your Git provider. The question on this explains the difference.
 
 ## Files
 
 - `index.html`: a redirect so the site root opens the drill.
-- `src/practice.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey]`. The correct option is listed first in the data and shuffled when shown.
+- `src/practice.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey or docs URL]`, with one bank per exam. The correct option is listed first in the data and shuffled when shown.
 - `README.md`: this file.
