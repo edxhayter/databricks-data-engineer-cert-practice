@@ -10,6 +10,7 @@
   --bg: #f3f5f7; --surface: #ffffff; --ink: #18212b; --muted: #5b6876; --line: #d9dfe5;
   --accent: #0e6a73; --accent-soft: #e1f0f1; --good: #1d7346; --good-soft: #e3f3ea;
   --bad: #b02a22; --bad-soft: #fbe7e5; --warn: #9a5b00; --warn-soft: #fbefdc;
+  --soil: #8a6a4f; --seed: #7a5230; --leaf: #2f8a4e; --bud: #c98a12; --bloom: #c2417a;
   --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -17,11 +18,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #11161c; --surface: #19212a; --ink: #e6ebf0; --muted: #9aa7b4; --line: #2b3641;
   --accent: #5cc3cb; --accent-soft: #163338; --good: #5fcf92; --good-soft: #15301f;
-  --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0b45a; --warn-soft: #382a14; color-scheme: dark; } }
+  --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0b45a; --warn-soft: #382a14; --soil: #a88a6e; --seed: #c99a6a; --leaf: #5fcf92; --bud: #f0b45a; --bloom: #f08cb6; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #11161c; --surface: #19212a; --ink: #e6ebf0; --muted: #9aa7b4; --line: #2b3641;
   --accent: #5cc3cb; --accent-soft: #163338; --good: #5fcf92; --good-soft: #15301f;
-  --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0b45a; --warn-soft: #382a14; color-scheme: dark; }
+  --bad: #ff8a80; --bad-soft: #3a1b19; --warn: #f0b45a; --warn-soft: #382a14; --soil: #a88a6e; --seed: #c99a6a; --leaf: #5fcf92; --bud: #f0b45a; --bloom: #f08cb6; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
 .wrap { max-width: 1080px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; }
@@ -34,6 +35,7 @@ h1 small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: v
 .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
 .modes.exam button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips[hidden] { display: none; }
 .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 11px; font: 500 13px var(--body); cursor: pointer; }
 .chip .w { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: 4px; }
 .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
@@ -55,7 +57,7 @@ code { font-family: var(--mono); font-size: .88em; background: var(--bg); border
 .opt.right { border-color: var(--good); background: var(--good-soft); }
 .opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
 .opt:disabled { cursor: default; }
-.feedback { margin-top: 14px; border-left: 3px solid var(--line); padding: 8px 12px; background: var(--bg); border-radius: 0 6px 6px 0; }
+.feedback { overflow-wrap: anywhere; margin-top: 14px; border-left: 3px solid var(--line); padding: 8px 12px; background: var(--bg); border-radius: 0 6px 6px 0; }
 .feedback.ok { border-color: var(--good); }
 .feedback.no { border-color: var(--bad); }
 .feedback strong { display: block; margin-bottom: 2px; }
@@ -89,6 +91,25 @@ code { font-family: var(--mono); font-size: .88em; background: var(--bg); border
 .small { font-size: 13px; color: var(--muted); }
 textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); margin-top: 8px; }
 .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+/* Garden: one plant per question; stage 0–5 grows with spaced correct answers. */
+.plant { display: inline-block; vertical-align: middle; flex: none; }
+.stage { display: inline-flex; align-items: center; gap: 4px; }
+.growth { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.growth .plant { width: 28px; height: 28px; }
+.garden-head { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 4px 0 14px; }
+.garden-head span { display: inline-flex; align-items: center; gap: 3px; }
+.garden-head b { color: var(--ink); font-family: var(--mono); font-weight: 600; }
+.bed { margin-bottom: 16px; }
+.bed h3 { font-family: var(--display); font-size: 15px; margin: 0 0 6px; display: flex; justify-content: space-between; gap: 8px; }
+.bed h3 small { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--muted); }
+.plot { display: flex; flex-wrap: wrap; gap: 2px; }
+.plot button { border: 1px solid transparent; background: transparent; padding: 1px; border-radius: 4px; cursor: pointer; line-height: 0; }
+.plot button:hover { border-color: var(--line); background: var(--bg); }
+.plot button:focus-visible { outline: 2px solid var(--accent); }
+.plot .plant { width: 22px; height: 22px; }
+.stack { display: flex; height: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.stack i { display: block; height: 100%; }
+.s1 { background: var(--seed); } .s2 { background: color-mix(in srgb, var(--leaf) 45%, var(--bg)); } .s3 { background: color-mix(in srgb, var(--leaf) 75%, var(--bg)); } .s4 { background: var(--bud); } .s5 { background: var(--bloom); }
 @media (prefers-reduced-motion: no-preference) { .opt, .chip { transition: border-color .12s, background .12s; } }
 </style>
 
@@ -103,6 +124,7 @@ textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); marg
       <div class="modes" role="group" aria-label="Mode">
         <button id="mode-drill" aria-pressed="true">Drill</button>
         <button id="mode-exam" aria-pressed="false">Timed mock</button>
+        <button id="mode-garden" aria-pressed="false">Garden</button>
       </div>
     </div>
   </header>
@@ -117,10 +139,12 @@ textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); marg
           <div class="kpi"><b id="k-acc">–</b><span>correct</span></div>
           <div class="kpi"><b id="k-pace">–</b><span>sec per answer</span></div>
           <div class="kpi"><b id="k-due">0</b><span>misses to repeat</span></div>
+          <div class="kpi"><b id="k-grew">0</b><span>plants grew</span></div>
+          <div class="kpi"><b id="k-bloom">0</b><span>in bloom (all-time)</span></div>
         </div>
       </section>
       <section class="card">
-        <h2>All-time by section</h2>
+        <h2>Garden by section</h2>
         <div class="secs" id="secs"></div>
       </section>
       <section class="card">
@@ -1929,9 +1953,40 @@ function loadStore() {
   store = { stats: {}, retry: {}, filter: "all" };
   try { const raw = localStorage.getItem(KEYS[examId]); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
   if (store.filter !== "all" && store.filter !== "missed" && !X.sections[store.filter]) store.filter = "all";
+  if (!store.garden) migrate();
+}
+// Turn pre-garden history into starting stages so earlier practice isn't lost.
+function migrate() {
+  store.garden = {}; store.tick = store.tick || 0;
+  Object.keys(store.stats).forEach((k) => {
+    const s = store.stats[k];
+    const st = store.retry[k] > 0 ? 0 : s.c - s.w >= 2 ? 2 : s.c > 0 ? 1 : 0;
+    store.garden[k] = { st, due: rand(0, GAP[st]) };
+  });
+  Object.keys(store.retry).forEach((k) => { if (store.retry[k] > 0 && !store.garden[k]) store.garden[k] = { st: 0, due: 0 }; });
 }
 function save() { try { localStorage.setItem(KEYS[examId], JSON.stringify(store)); } catch (e) {} }
-loadStore();
+
+// ---- garden ----
+// Stage 0 = answered but not yet right; 1–5 = seed → bloom. GAP[st] = questions that must pass before it can grow again.
+const GAP = [0, 5, 15, 40, 80, 150];
+const STAGE = ["Not rooted yet", "Seed", "Sprout", "Seedling", "Bud", "Bloom"];
+const gst = (i) => (store.garden[i] ? store.garden[i].st : -1);
+const stageLabel = (st) => (st < 0 ? "New question" : st === 0 ? STAGE[0] : `${STAGE[st]} ${st}/5`);
+function plant(st) {
+  const L = (y) => `<path d="M10 ${y}c-1-3-3.5-3.6-5.2-3.5c.3 2.3 2.1 3.7 5.2 3.5z" fill="var(--leaf)"/>`;
+  const R = (y) => `<path d="M10 ${y}c1-3 3.5-3.6 5.2-3.5c-.3 2.3-2.1 3.7-5.2 3.5z" fill="var(--leaf)"/>`;
+  const stem = (top) => `<path d="M10 17.5V${top}" stroke="var(--leaf)" stroke-width="1.6" stroke-linecap="round"/>`;
+  let b = "";
+  if (st === 0) b = `<path d="M8.2 12.6l3.6 3.2M11.8 12.6l-3.6 3.2" stroke="var(--bad)" stroke-width="1.5" stroke-linecap="round"/>`;
+  else if (st === 1) b = `<ellipse cx="10" cy="15.3" rx="2.5" ry="1.8" fill="var(--seed)"/>`;
+  else if (st === 2) b = stem(14) + L(14) + R(14);
+  else if (st === 3) b = stem(8.5) + L(15.5) + R(13) + L(10.5);
+  else if (st === 4) b = stem(7) + L(15.5) + R(13) + `<ellipse cx="10" cy="5.6" rx="2.1" ry="3" fill="var(--bud)"/>`;
+  else if (st === 5) b = stem(7) + L(15.5) + R(13) + [[0, -2.7], [2.57, -0.83], [1.59, 2.18], [-1.59, 2.18], [-2.57, -0.83]]
+    .map(([x, y]) => `<circle cx="${10 + x}" cy="${5.4 + y}" r="2.3" fill="var(--bloom)"/>`).join("") + `<circle cx="10" cy="5.4" r="1.5" fill="var(--bud)"/>`;
+  return `<svg class="plant" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 17.6h14" stroke="var(--soil)" stroke-width="2" stroke-linecap="round"${st < 0 ? ' opacity=".35"' : ""}/>${b}</svg>`;
+}
 
 // ---- helpers ----
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -1943,8 +1998,8 @@ const link = (q) => (/^https?:/.test(q[4]) ? q[4] : X.links[q[4]]);
 
 // ---- session ----
 let mode = "drill";
-let session = { answered: 0, correct: 0, time: 0 };
-let queue = [], cur = null, perm = null, picked = null, shownAt = 0, lastId = null;
+let session = { answered: 0, correct: 0, time: 0, grew: 0 };
+let queue = [], cur = null, perm = null, picked = null, shownAt = 0, lastId = null, outcome = null, undo = null;
 
 function pool() {
   const ids = BANKX.map((_, i) => i);
@@ -1952,46 +2007,76 @@ function pool() {
   if (store.filter === "all") return ids;
   return ids.filter((i) => BANKX[i][0] === Number(store.filter));
 }
-function buildQueue() {
-  const p = pool();
-  const unseen = shuffle(p.filter((i) => !store.stats[i]));
-  const seen = shuffle(p.filter((i) => store.stats[i]));
-  // Unseen questions first, then ones you've seen, weakest first-ish.
-  seen.sort((a, b) => (store.stats[b].w - store.stats[b].c * 0.5) - (store.stats[a].w - store.stats[a].c * 0.5) + (Math.random() - 0.5));
-  queue = unseen.concat(seen);
-  // Pending repeats go a few questions in.
-  Object.keys(store.retry).map(Number).filter((i) => store.retry[i] > 0 && p.includes(i)).forEach((i) => insertAt(i, rand(2, 6)));
-}
-function insertAt(id, pos) {
-  queue = queue.filter((x) => x !== id);
-  queue.splice(Math.min(pos, queue.length), 0, id);
-}
+// Pick the next plant: due growing plants (longest overdue first) about two times in three,
+// otherwise a new question; blooms come back when their recheck is due.
 function nextQ() {
-  if (!queue.length) buildQueue();
-  if (!queue.length) { renderEmpty(); return; }
-  let id = queue.shift();
-  if (id === lastId && queue.length) { queue.splice(1, 0, id); id = queue.shift(); }
-  cur = id; lastId = id; perm = shuffle([0, 1, 2, 3]); picked = null; shownAt = Date.now();
+  let p = pool();
+  if (p.length > 1) p = p.filter((i) => i !== lastId);
+  if (!p.length) { renderEmpty(); return; }
+  const T = store.tick, g = store.garden, due = [], blooms = [], fresh = [], later = [];
+  p.forEach((i) => { const e = g[i]; if (!e) fresh.push(i); else if (e.due <= T) (e.st === 5 ? blooms : due).push(i); else later.push(i); });
+  let id;
+  if (due.length && (!fresh.length || Math.random() < 2 / 3)) {
+    due.sort((a, b) => g[a].due - g[b].due || g[a].st - g[b].st);
+    id = due[Math.floor(Math.random() * Math.min(3, due.length))];
+  } else if (fresh.length) id = fresh[Math.floor(Math.random() * fresh.length)];
+  else if (blooms.length) id = blooms.sort((a, b) => g[a].due - g[b].due)[0];
+  else id = later.sort((a, b) => g[a].due - g[b].due)[0]; // nothing due: practise ahead (it won't grow)
+  show(id);
+}
+function show(id) {
+  cur = id; lastId = id; perm = shuffle([0, 1, 2, 3]); picked = null; outcome = null; undo = null; shownAt = Date.now();
   renderDrill();
 }
 function answer(slot) {
   if (picked !== null || cur === null) return;
   picked = slot;
-  const ok = perm[slot] === 0;
-  const s = stat(cur);
+  const ok = perm[slot] === 0, s = stat(cur), T = ++store.tick, had = store.garden[cur];
+  undo = { e: had ? Object.assign({}, had) : null, retry: store.retry[cur], grew: 0 };
+  const e = had || { st: 0, due: 0 }, from = e.st;
   session.answered++; session.time += Math.min(Date.now() - shownAt, 300000);
   if (ok) {
     s.c++; session.correct++;
+    if (e.st === 0 || (e.st < 5 && T >= e.due)) {
+      e.st++; session.grew++; undo.grew = 1;
+      outcome = { kind: e.st === 5 ? "bloomed" : "grew", from, to: e.st };
+    } else if (e.st === 5 && T >= e.due) outcome = { kind: "held", from, to: 5 };
+    else outcome = { kind: "early", from, to: e.st, wait: e.due - T };
+    if (outcome.kind !== "early") e.due = T + GAP[e.st] + rand(0, Math.floor(GAP[e.st] / 5));
     if (store.retry[cur] > 0) {
       store.retry[cur]--;
-      if (store.retry[cur] > 0) insertAt(cur, rand(8, 14)); else delete store.retry[cur];
+      if (store.retry[cur] > 0) e.due = Math.min(e.due, T + rand(8, 14)); else delete store.retry[cur];
     }
   } else {
     s.w++;
-    store.retry[cur] = 2;           // must get it right twice more
-    insertAt(cur, rand(3, 6));      // comes back soon
+    e.st = e.st === 5 ? 2 : Math.max(0, e.st - 2); // a bloom wilts to a sprout; anything else drops two stages
+    e.due = T + rand(3, 6);
+    store.retry[cur] = 2;                            // must get it right twice more
+    outcome = { kind: "wilted", from, to: e.st, fresh: !had };
   }
+  store.garden[cur] = e;
   save(); renderDrill(); renderRail();
+}
+// "I guessed": undo any growth from a lucky correct answer and bring it back soon.
+function guessed() {
+  if (picked === null || !outcome || outcome.kind === "wilted" || outcome.kind === "guessed") return;
+  const e = undo.e ? Object.assign({}, undo.e) : { st: 0, due: 0 }, s = stat(cur);
+  e.due = store.tick + rand(3, 6);
+  store.garden[cur] = e;
+  if (undo.retry > 0) store.retry[cur] = undo.retry;
+  s.g = (s.g || 0) + 1; session.grew -= undo.grew;
+  outcome = { kind: "guessed", from: e.st, to: e.st };
+  save(); renderDrill(); renderRail();
+}
+function growthMsg(o) {
+  const n = (st) => STAGE[st].toLowerCase();
+  if (o.kind === "grew") return o.from === 0 ? `Seed planted. It can grow again after about ${GAP[1]} more questions.` : `Grew to ${n(o.to)} (${o.to}/5). It can grow again after about ${GAP[o.to]} more questions.`;
+  if (o.kind === "bloomed") return "In bloom! It will come back now and then to check it has stuck.";
+  if (o.kind === "held") return `Still in bloom. Next check in about ${GAP[5]} questions.`;
+  if (o.kind === "early") return `Right, but too soon to grow. It needs about ${o.wait} more question${o.wait === 1 ? "" : "s"} of spacing first.`;
+  if (o.kind === "guessed") return "Marked as a guess, so it didn't grow. It will come back in a few questions.";
+  if (o.fresh || o.from === o.to) return "Not rooted yet. It will come back in a few questions.";
+  return `Wilted from ${n(o.from)} to ${n(o.to)}. It will come back in a few questions.`;
 }
 
 // ---- drill render ----
@@ -2000,6 +2085,8 @@ function renderDrill() {
   const isRepeat = store.retry[cur] > 0 && picked === null;
   let h = `<div class="meta"><span class="tag">S${q[0]} · ${X.sections[q[0]]}</span>`;
   if (isRepeat) h += `<span class="tag repeat">Repeat of a miss</span>`;
+  const st = picked !== null && outcome ? outcome.from : gst(cur);
+  h += `<span class="stage">${plant(picked !== null && undo && undo.e === null ? -1 : st)}${stageLabel(picked !== null && undo && undo.e === null ? -1 : st)}</span>`;
   if (s) h += `<span>seen ${s.c + s.w}× · missed ${s.w}×</span>`;
   h += `</div><p class="q">${fmt(q[1])}</p>`;
   h += `<div class="opts">`;
@@ -2012,14 +2099,16 @@ function renderDrill() {
   if (picked !== null) {
     const ok = perm[picked] === 0, url = link(q);
     h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
-    if (!ok) h += `<div class="small" style="margin-top:4px">This one will come back in a few questions.</div>`;
-    h += `</div><div class="actions"><button class="btn" id="next">Next question</button><span class="hint">Enter or Space</span></div>`;
+    h += `</div><div class="growth">${plant(outcome.to)}<span>${growthMsg(outcome)}</span></div>`;
+    const canGuess = ok && outcome.kind !== "guessed";
+    h += `<div class="actions"><button class="btn" id="next">Next question</button>${canGuess ? `<button class="btn ghost" id="guess">I guessed</button>` : ""}<span class="hint">Enter or Space${canGuess ? " · G if you guessed" : ""}</span></div>`;
   } else {
     h += `<div class="actions"><span class="hint">Press 1–4 or A–D to answer</span></div>`;
   }
   $("main").innerHTML = h;
   $("main").querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => answer(Number(b.dataset.slot))));
   const n = $("next"); if (n) { n.addEventListener("click", nextQ); n.focus({ preventScroll: true }); }
+  const gb = $("guess"); if (gb) gb.addEventListener("click", guessed);
 }
 function renderEmpty() {
   $("main").innerHTML = `<p class="q">No questions match this filter.</p><p class="small">${store.filter === "missed" ? "You have no misses to repeat. Pick a section or All." : "Pick another filter."}</p>`;
@@ -2067,7 +2156,9 @@ function submitExam() {
   exam.done = true; clearInterval(tick);
   exam.ids.forEach((id, k) => {
     const ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0, s = stat(id);
-    session.answered++; if (ok) { s.c++; session.correct++; } else { s.w++; store.retry[id] = 2; }
+    session.answered++;
+    if (ok) { s.c++; session.correct++; }
+    else { s.w++; store.retry[id] = 2; const e = store.garden[id] || (store.garden[id] = { st: 0, due: 0 }); e.due = Math.min(e.due, store.tick); }
   });
   exam.took = Math.round((Date.now() - (exam.end - X.minutes * 60000)) / 60000);
   save(); renderRail(); renderResults();
@@ -2078,7 +2169,7 @@ function renderResults() {
   exam.ids.forEach((id, k) => { const sec = BANKX[id][0], ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0; bySec[sec] = bySec[sec] || [0, 0]; bySec[sec][1]++; if (ok) { score++; bySec[sec][0]++; } });
   let h = `<div class="meta"><span class="tag">Timed ${n} · results</span><span>${exam.took} min</span></div><p class="q">${score} / ${n} (${Math.round(score / n * 100)}%)</p><div class="secs">`;
   Object.keys(bySec).sort((a, b) => a - b).forEach((s) => { const [c, m] = bySec[s], pc = c / m; h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${X.sections[s]}"><i class="${pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${pc * 100}%"></i></div><span class="v">${c}/${m}</span></div>`; });
-  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed mock</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
+  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. The mock doesn’t grow or wilt any plants. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed mock</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
   exam.ids.forEach((id, k) => {
     const q = BANKX[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
     if (ok) return;
@@ -2096,11 +2187,14 @@ function renderRail() {
   $("k-acc").textContent = session.answered ? Math.round(session.correct / session.answered * 100) + "%" : "–";
   $("k-pace").textContent = session.answered && mode === "drill" ? Math.round(session.time / session.answered / 1000) : "–";
   $("k-due").textContent = Object.values(store.retry).filter((v) => v > 0).length;
+  $("k-grew").textContent = session.grew;
+  $("k-bloom").textContent = BANKX.filter((_, i) => gst(i) === 5).length;
   let h = "";
-  Object.keys(X.sections).forEach((s) => {
-    let c = 0, w = 0; BANKX.forEach((q, i) => { if (q[0] === Number(s) && store.stats[i]) { c += store.stats[i].c; w += store.stats[i].w; } });
-    const n = c + w, pc = n ? c / n : 0;
-    h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${X.sections[s]}"><i class="${!n ? "" : pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${n ? pc * 100 : 0}%"></i></div><span class="v">${n ? Math.round(pc * 100) + "% · " + n : "–"}</span></div>`;
+  Object.keys(X.sections).forEach((sec) => {
+    const ids = BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)), n = ids.length, by = [0, 0, 0, 0, 0, 0];
+    ids.forEach((i) => { const st = gst(i); if (st > 0) by[st]++; });
+    const tip = `${X.sections[sec]}: ` + [1, 2, 3, 4, 5].map((k) => `${by[k]} ${STAGE[k].toLowerCase()}`).join(", ") + `, ${n - by.slice(1).reduce((a, b) => a + b, 0)} not yet planted`;
+    h += `<div class="sec"><span class="n">S${sec}</span><div class="stack" title="${tip}">${[5, 4, 3, 2, 1].map((k) => (by[k] ? `<i class="s${k}" style="width:${by[k] / n * 100}%"></i>` : "")).join("")}</div><span class="v" title="in bloom">${by[5]}/${n}</span></div>`;
   });
   $("secs").innerHTML = h;
   renderChips();
@@ -2115,13 +2209,31 @@ function renderChips() {
   $("chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { store.filter = b.dataset.f; save(); queue = []; renderChips(); nextQ(); }));
 }
 
+// ---- garden view ----
+function renderGarden() {
+  const by = [0, 0, 0, 0, 0, 0, 0]; // index st+1
+  BANKX.forEach((_, i) => by[gst(i) + 1]++);
+  let h = `<div class="meta"><span class="tag">Garden</span><span>${by[6]} of ${BANKX.length} in bloom</span></div>`;
+  h += `<p class="small" style="margin:0 0 8px">Each question is a plant. A correct answer plants a seed, and correct answers spaced out over time grow it to a bloom at 5. A wrong answer drops it two stages, and a bloom wilts to a sprout. Click any plant to practise that question.</p>`;
+  h += `<div class="garden-head">` + [-1, 0, 1, 2, 3, 4, 5].map((st) => `<span>${plant(st)}${st < 0 ? "Not seen" : STAGE[st]} <b>${by[st + 1]}</b></span>`).join("") + `</div>`;
+  Object.keys(X.sections).forEach((sec) => {
+    const ids = BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)).sort((a, b) => gst(b) - gst(a));
+    const bl = ids.filter((i) => gst(i) === 5).length;
+    h += `<div class="bed"><h3>S${sec} ${X.sections[sec]} <small>${bl}/${ids.length} in bloom · ${X.weight[sec]}% of exam</small></h3><div class="plot">`;
+    ids.forEach((i) => { const t = BANKX[i][1].replace(/`/g, ""); h += `<button data-id="${i}" title="${esc(stageLabel(gst(i)))}: ${esc(t.length > 90 ? t.slice(0, 90) + "…" : t)}" aria-label="${esc(stageLabel(gst(i)))}. Practise this question">${plant(gst(i))}</button>`; });
+    h += `</div></div>`;
+  });
+  $("main").innerHTML = h;
+  $("main").querySelectorAll(".plot button").forEach((b) => b.addEventListener("click", () => setMode("drill", Number(b.dataset.id))));
+}
+
 // ---- exam & mode switches ----
 function setExam(id) {
   if (!EXAMS[id] || !EXAMS[id].bank.length) return;
   examId = id; X = EXAMS[id]; BANKX = X.bank;
   try { localStorage.setItem(KEYS.choice, id); } catch (e) {}
   loadStore();
-  session = { answered: 0, correct: 0, time: 0 };
+  session = { answered: 0, correct: 0, time: 0, grew: 0 };
   queue = []; cur = null; lastId = null; exam = null; clearInterval(tick);
   $("exam-assoc").setAttribute("aria-pressed", id === "assoc"); $("exam-pro").setAttribute("aria-pressed", id === "pro");
   $("title").textContent = X.title; document.title = X.title;
@@ -2129,10 +2241,11 @@ function setExam(id) {
   $("mode-exam").textContent = "Timed " + X.total;
   setMode(mode);
 }
-function setMode(m) {
+function setMode(m, id) {
   mode = m;
-  $("mode-drill").setAttribute("aria-pressed", m === "drill"); $("mode-exam").setAttribute("aria-pressed", m === "exam");
-  if (m === "drill") { clearInterval(tick); queue = []; nextQ(); }
+  ["drill", "exam", "garden"].forEach((k) => $("mode-" + k).setAttribute("aria-pressed", m === k));
+  if (m === "drill") { clearInterval(tick); if (id !== undefined) show(id); else nextQ(); }
+  else if (m === "garden") { clearInterval(tick); renderGarden(); }
   else if (!exam || exam.done) startExam(); else { tick = setInterval(renderTimer, 1000); renderExam(); }
   renderRail();
 }
@@ -2140,6 +2253,7 @@ $("exam-assoc").addEventListener("click", () => setExam("assoc"));
 $("exam-pro").addEventListener("click", () => setExam("pro"));
 $("mode-drill").addEventListener("click", () => setMode("drill"));
 $("mode-exam").addEventListener("click", () => setMode("exam"));
+$("mode-garden").addEventListener("click", () => setMode("garden"));
 if (!PBANK.length) $("exam-pro").disabled = true;
 
 // ---- keyboard ----
@@ -2149,6 +2263,7 @@ document.addEventListener("keydown", (e) => {
   if (mode === "drill") {
     if (slot >= 0 && picked === null) { e.preventDefault(); answer(slot); }
     else if ((k === "enter" || k === " ") && picked !== null) { e.preventDefault(); nextQ(); }
+    else if (k === "g" && picked !== null) { e.preventDefault(); guessed(); }
   } else if (exam && !exam.done) {
     const last = exam.ids.length - 1;
     if (slot >= 0) { exam.picks[exam.i] = slot; renderExam(); }
@@ -2170,7 +2285,7 @@ $("copy").addEventListener("click", () => {
 });
 $("reset").addEventListener("click", () => {
   $("copyout").innerHTML = `<div class="confirm" style="margin-top:8px"><span>Clear all ${X.title} progress and misses?</span><button class="btn danger" id="yes">Clear</button><button class="btn ghost" id="no">Keep</button></div>`;
-  $("yes").addEventListener("click", () => { store = { stats: {}, retry: {}, filter: "all" }; save(); session = { answered: 0, correct: 0, time: 0 }; $("copyout").innerHTML = ""; setMode(mode); });
+  $("yes").addEventListener("click", () => { store = { stats: {}, retry: {}, filter: "all", garden: {}, tick: 0 }; save(); session = { answered: 0, correct: 0, time: 0, grew: 0 }; $("copyout").innerHTML = ""; setMode(mode); });
   $("no").addEventListener("click", () => ($("copyout").innerHTML = ""));
 });
 
