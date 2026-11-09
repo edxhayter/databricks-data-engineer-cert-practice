@@ -1965,7 +1965,8 @@ function migrate() {
 function save() { try { localStorage.setItem(KEYS[examId], JSON.stringify(store)); } catch (e) {} }
 
 // ---- garden ----
-// Stage 0 = answered but not yet right; 1–5 = seed → bloom. GAP[st] = questions that must pass before it can grow again.
+// Stage 0 = answered but not yet right; 1–5 = seed → bloom. Every correct answer grows one stage; a wrong answer resets to 0.
+// GAP[st] = roughly how many questions pass before a plant at that stage comes back.
 const GAP = [0, 5, 15, 40, 80, 150];
 const STAGE = ["Not rooted yet", "Seed", "Sprout", "Seedling", "Bud", "Bloom"];
 const gst = (i) => (store.garden[i] ? store.garden[i].st : -1);
@@ -2034,19 +2035,18 @@ function answer(slot) {
   session.answered++; session.time += Math.min(Date.now() - shownAt, 300000);
   if (ok) {
     s.c++; session.correct++;
-    if (e.st === 0 || (e.st < 5 && T >= e.due)) {
+    if (e.st < 5) {
       e.st++; session.grew++; undo.grew = 1;
       outcome = { kind: e.st === 5 ? "bloomed" : "grew", from, to: e.st };
-    } else if (e.st === 5 && T >= e.due) outcome = { kind: "held", from, to: 5 };
-    else outcome = { kind: "early", from, to: e.st, wait: e.due - T };
-    if (outcome.kind !== "early") e.due = T + GAP[e.st] + rand(0, Math.floor(GAP[e.st] / 5));
+    } else outcome = { kind: "held", from, to: 5 };
+    e.due = T + GAP[e.st] + rand(0, Math.floor(GAP[e.st] / 5));
     if (store.retry[cur] > 0) {
       store.retry[cur]--;
       if (store.retry[cur] > 0) e.due = Math.min(e.due, T + rand(8, 14)); else delete store.retry[cur];
     }
   } else {
     s.w++;
-    e.st = e.st === 5 ? 2 : Math.max(0, e.st - 2); // a bloom wilts to a sprout; anything else drops two stages
+    e.st = 0;                                       // any wrong answer resets the plant, blooms included
     e.due = T + rand(3, 6);
     store.retry[cur] = 2;                            // must get it right twice more
     outcome = { kind: "wilted", from, to: e.st, fresh: !had };
@@ -2067,13 +2067,12 @@ function guessed() {
 }
 function growthMsg(o) {
   const n = (st) => STAGE[st].toLowerCase();
-  if (o.kind === "grew") return o.from === 0 ? `Seed planted. It can grow again after about ${GAP[1]} more questions.` : `Grew to ${n(o.to)} (${o.to}/5). It can grow again after about ${GAP[o.to]} more questions.`;
+  if (o.kind === "grew") return `${o.from === 0 ? "Seed planted" : "Grew to " + n(o.to)} (${o.to}/5). It comes back in about ${GAP[o.to]} questions.`;
   if (o.kind === "bloomed") return "In bloom! It will come back now and then to check it has stuck.";
   if (o.kind === "held") return `Still in bloom. Next check in about ${GAP[5]} questions.`;
-  if (o.kind === "early") return `Right, but too soon to grow. It needs about ${o.wait} more question${o.wait === 1 ? "" : "s"} of spacing first.`;
   if (o.kind === "guessed") return "Marked as a guess, so it didn't grow. It will come back in a few questions.";
   if (o.fresh || o.from === o.to) return "Not rooted yet. It will come back in a few questions.";
-  return `Wilted from ${n(o.from)} to ${n(o.to)}. It will come back in a few questions.`;
+  return `Reset from ${n(o.from)} (${o.from}/5) back to the start. It will come back in a few questions.`;
 }
 
 // ---- drill render ----
@@ -2166,7 +2165,7 @@ function renderResults() {
   exam.ids.forEach((id, k) => { const sec = BANKX[id][0], ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0; bySec[sec] = bySec[sec] || [0, 0]; bySec[sec][1]++; if (ok) { score++; bySec[sec][0]++; } });
   let h = `<div class="meta"><span class="tag">Timed ${n} · results</span><span>${exam.took} min</span></div><p class="q">${score} / ${n} (${Math.round(score / n * 100)}%)</p><div class="secs">`;
   Object.keys(bySec).sort((a, b) => a - b).forEach((s) => { const [c, m] = bySec[s], pc = c / m; h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${X.sections[s]}"><i class="${pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${pc * 100}%"></i></div><span class="v">${c}/${m}</span></div>`; });
-  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. The mock doesn’t grow or wilt any plants. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed mock</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
+  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. The mock doesn’t grow or reset any plants. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed mock</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
   exam.ids.forEach((id, k) => {
     const q = BANKX[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
     if (ok) return;
@@ -2211,7 +2210,7 @@ function renderGarden() {
   const by = [0, 0, 0, 0, 0, 0, 0]; // index st+1
   BANKX.forEach((_, i) => by[gst(i) + 1]++);
   let h = `<div class="meta"><span class="tag">Garden</span><span>${by[6]} of ${BANKX.length} in bloom</span></div>`;
-  h += `<p class="small" style="margin:0 0 8px">Each question is a plant. A correct answer plants a seed, and correct answers spaced out over time grow it to a bloom at 5. A wrong answer drops it two stages, and a bloom wilts to a sprout. Click any plant to practise that question.</p>`;
+  h += `<p class="small" style="margin:0 0 8px">Each question is a plant. A correct answer plants a seed, and each further correct answer grows it one stage, up to a bloom at 5. A wrong answer resets it. Plants come back at widening intervals, and blooms come back now and then to check they've stuck. Click any plant to practise that question.</p>`;
   h += `<div class="garden-head">` + [-1, 0, 1, 2, 3, 4, 5].map((st) => `<span>${plant(st)}${st < 0 ? "Not seen" : STAGE[st]} <b>${by[st + 1]}</b></span>`).join("") + `</div>`;
   Object.keys(X.sections).forEach((sec) => {
     const ids = BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)).sort((a, b) => gst(b) - gst(a));

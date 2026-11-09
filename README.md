@@ -7,7 +7,7 @@ An unofficial, single-page practice drill for two Databricks certifications. A t
 | Data Engineer **Associate** (guide of 4 May 2026, updated 6 Aug 2026) | 278 | 45 questions, 90 minutes |
 | Data Engineer **Professional** (guide of 9 Oct 2026) | 200 | 60 questions, 120 minutes |
 
-Every question has instant feedback. Each question is also a plant in a knowledge garden: spaced correct answers grow it from a seed to a bloom, wrong answers wilt it, and blooms come back now and then to check they've stuck.
+Every question has instant feedback. Each question is also a plant in a knowledge garden: each correct answer grows it one stage from a seed to a bloom, a wrong answer resets it, and blooms come back now and then to check they've stuck.
 
 **Live site:** https://edxhayter.github.io/databricks-data-engineer-cert-practice/src/practice.html
 
@@ -22,22 +22,22 @@ The page, the question bank and this README were written by **Claude** (Anthropi
 - **Drill mode.** Each answer gets instant feedback, a one-line explanation and a link to the relevant docs page. Option order is shuffled every time.
 - **Knowledge garden.** Every question is a plant with six stages:
 
-  | Stage | How it gets there | Can grow again after |
+  | Stage | How it gets there | Comes back after |
   |---|---|---|
-  | Not rooted yet | answered, but not yet correctly | the next correct answer |
-  | 1 Seed | first correct answer | about 5 more questions |
-  | 2 Sprout | another spaced correct answer | about 15 |
-  | 3 Seedling | another spaced correct answer | about 40 |
-  | 4 Bud | another spaced correct answer | about 80 |
-  | 5 Bloom | fifth spaced correct answer | rechecked about every 150 |
+  | Not rooted yet | answered, but not yet correctly | 3–6 questions |
+  | 1 Seed | first correct answer | about 5 questions |
+  | 2 Sprout | second correct answer | about 15 |
+  | 3 Seedling | third correct answer | about 40 |
+  | 4 Bud | fourth correct answer | about 80 |
+  | 5 Bloom | fifth correct answer | rechecked about every 150 |
 
-  - **Spacing counts.** A correct answer before the gap has passed is marked right but doesn't grow the plant. Gaps are counted in questions answered rather than days, so it works within one long session.
-  - **Wrong answers wilt.** A plant drops two stages, and a bloom drops to a sprout. The question comes back 3–6 questions later and stays in rotation until you get it right twice more.
+  - **Every correct answer grows the plant one stage.** The widening gaps only decide when a question comes back, so a plant isn't asked again straight away.
+  - **A wrong answer resets it.** Any stage, bloom included, goes back to "not rooted yet". The question comes back 3–6 questions later and stays in rotation until you get it right twice more.
   - **"I guessed".** After a lucky correct answer, press `G` or the button. The plant doesn't grow and the question comes back soon.
-  - **What comes next.** About two picks in three are plants that are due to grow, longest overdue first. The rest are new questions, and blooms come back when their recheck is due.
+  - **What comes next.** About two picks in three are plants that are due back, longest overdue first. The rest are new questions, and blooms come back when their recheck is due.
   - **Garden view.** Every question in the bank laid out by section, so you can see weak sections at a glance. Click any plant to practise that question.
 - **Filters.** Drill the whole bank, one exam section, or only your misses.
-- **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses go back into drill mode. The mock doesn't grow or wilt plants.
+- **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses go back into drill mode. The mock doesn't grow or reset plants.
 - **Separate progress per exam.** Each exam keeps its own history, misses and section stats.
 - **Progress tracking.** Garden stages by section, pace (seconds per answer), and a "Copy misses" button that copies your weak spots as text.
 - **Keyboard first.** Press `1`–`4` or `A`–`D` to answer, `Enter` or `Space` for the next question, and `G` if you guessed.
@@ -93,6 +93,7 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
 
     It then clicked through both exams in a browser.
 12. **Replaced the miss queue with a knowledge garden.** Edward suggested the idea: a correct answer seeds a question, later correct answers grow it, it blooms at five, and blooms are retested in case they need resetting. Claude added the rules that make it spaced repetition rather than raw repetition: growth gaps that widen with each stage, a two-stage drop for wrong answers, and an "I guessed" button. Existing browser progress converts on first load. Questions already right more often than wrong start as sprouts, other correct ones as seeds, and current misses as "not rooted yet". Claude tested it by simulating 1,500 answers with 10% wrong on the Professional bank. All 200 questions moved from seed to bloom in about 1,200 answers, and no stage was starved. It then checked the garden view, the guess button and phone layout in a browser.
+13. **Simplified the growth rules.** After trying it, Edward found that holding back growth until enough questions had passed didn't match the original idea. The rules now follow it: every correct answer grows a plant one stage, and any wrong answer resets it to the start. The widening gaps stay, but only to space out when a question comes back.
 
 ### Known limitations
 
