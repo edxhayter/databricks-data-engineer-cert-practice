@@ -33,15 +33,22 @@ The page, the question bank and this README were written by **Claude** (Anthropi
 
   - **Every correct answer grows the plant one stage.** The widening gaps only decide when a question comes back, so a plant isn't asked again straight away.
   - **A wrong answer resets it.** Any stage, bloom included, goes back to "not rooted yet". The question comes back 3–6 questions later and stays in rotation until you get it right twice more.
-  - **"I guessed".** After a lucky correct answer, press `G` or the button. The plant doesn't grow and the question comes back soon.
+  - **"I guessed".** After a lucky correct answer, press `G` or click "I guessed". The plant doesn't grow and the question comes back soon.
   - **What comes next.** About two picks in three are plants that are due back, longest overdue first. The rest are new questions, and blooms come back when their recheck is due.
-  - **Garden view.** Every question in the bank laid out by section, so you can see weak sections at a glance. Click any plant to practise that question.
-- **Filters.** Drill the whole bank, one exam section, or only your misses.
-- **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses go back into drill mode. The mock doesn't grow or reset plants.
-- **Separate progress per exam.** Each exam keeps its own history, misses and section stats.
-- **Progress tracking.** Garden stages by section, pace (seconds per answer), and a "Copy misses" button that copies your weak spots as text.
+  - **Garden view.** Every question in the bank laid out by section (each section is a "bed"), so you can see weak sections at a glance. Click any plant to practise that question.
+  - **After each answer** the foot of the question shows what happened to the plant. Click anywhere on it, or press `Enter` or `Space`, for the next question.
+- **Navigation.** One bar across the top. Menus open on hover with a mouse, and on click, tap or the keyboard:
+  - **Associate ▾ / Professional ▾** switches exam.
+  - **Practise ▾** picks what to drill: all beds, one section, or your **wilting questions** (the ones you've missed).
+  - **Mock exam** and **Garden** open those views. The sprig logo takes you back to practice.
+  - **⋯** holds Copy wilting questions, Export, Import, Dark mode and Reset.
+- **Exam readiness.** A line above the question shows readiness weighted by the exam's section weights (each plant counts by its stage, a bloom fully and a seed a fifth) and names the weakest bed, with a link to practise it.
+- **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses become wilting questions. The mock doesn't grow or reset plants.
+- **Separate progress per exam.** Each exam keeps its own history, wilting questions and section stats.
+- **Copy wilting questions.** Copies your misses as text, for example to ask Claude for a targeted explanation.
 - **Backups.** "Export progress" downloads your garden for both exams as a small JSON file. "Import progress" loads one back, after showing what's in it and asking before it replaces anything. Use it to keep a backup or to move to another browser or device.
-- **Keyboard first.** Press `1`–`4` or `A`–`D` to answer, `Enter` or `Space` for the next question, and `G` if you guessed.
+- **Keyboard first.** Press `1`–`4` or `A`–`D` to answer, `Enter` or `Space` for the next question, and `G` if you guessed. A quiet line under the question shows the keys that apply.
+- **Light and dark.** Follows your system setting until you pick one from the ⋯ menu.
 
 Progress is saved in your browser's `localStorage`. It stays on your machine and isn't shared, and clearing site data clears it too, so export a backup now and then.
 

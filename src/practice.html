@@ -14,8 +14,7 @@
   --accent: #2e5e3e; --accent-ink: #fbf9f3; --accent-soft: #e2eadb;
   --good: #3a7a3e; --good-soft: #e4eedb; --bad: #a8472a; --bad-soft: #f6e3d9; --warn: #8f630f; --warn-soft: #f4e8cc;
   --soil: #8a6a4f; --soil-soft: #e8dcc6; --seed: #a07a55; --leaf: #3f8a4f; --bud: #c48a1c; --bloom: #b7476f; --bloom-soft: #f5e1e8;
-  --stake: #e9dcc0; --stake-ink: #574329;
-  --grain: rgba(90, 70, 35, .09);
+  --stake: #e9dcc0; --stake-ink: #574329; --tint: rgba(60, 45, 20, .05);
   --shadow: 0 1px 2px rgba(60, 45, 20, .05), 0 10px 24px -18px rgba(60, 45, 20, .35);
   --display: "Fraunces", Georgia, "Times New Roman", serif;
   --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -27,7 +26,7 @@
   --accent: #9ccf95; --accent-ink: #10150f; --accent-soft: #213325;
   --good: #8fd08a; --good-soft: #1c3120; --bad: #f09a7b; --bad-soft: #3a2118; --warn: #e5b55c; --warn-soft: #352a14;
   --soil: #a88a6e; --soil-soft: #2a2519; --seed: #c99a6a; --leaf: #7cc27f; --bud: #e5b55c; --bloom: #ee8fb3; --bloom-soft: #3a1f2b;
-  --stake: #2e291e; --stake-ink: #e3cfa6; --grain: rgba(215, 230, 195, .05);
+  --stake: #2e291e; --stake-ink: #e3cfa6; --tint: rgba(255, 255, 255, .045);
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 28px -18px rgba(0, 0, 0, .7); color-scheme: dark; } }
 :root[data-theme="dark"] {
   --paper: #10150f; --surface: #172019; --surface-2: #1c261e; --ink: #e9e5d6; --muted: #a4a690;
@@ -35,114 +34,174 @@
   --accent: #9ccf95; --accent-ink: #10150f; --accent-soft: #213325;
   --good: #8fd08a; --good-soft: #1c3120; --bad: #f09a7b; --bad-soft: #3a2118; --warn: #e5b55c; --warn-soft: #352a14;
   --soil: #a88a6e; --soil-soft: #2a2519; --seed: #c99a6a; --leaf: #7cc27f; --bud: #e5b55c; --bloom: #ee8fb3; --bloom-soft: #3a1f2b;
-  --stake: #2e291e; --stake-ink: #e3cfa6; --grain: rgba(215, 230, 195, .05);
+  --stake: #2e291e; --stake-ink: #e3cfa6; --tint: rgba(255, 255, 255, .045);
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 28px -18px rgba(0, 0, 0, .7); color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background-color: var(--paper); background-image: radial-gradient(var(--grain) 1px, transparent 1.3px); background-size: 20px 20px;
+body { margin: 0; background: var(--paper);
   color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
-.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.wrap { max-width: calc(var(--content) + 32px); margin: 0 auto; padding-block: 18px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 14px; }
 a { color: var(--accent); text-underline-offset: 2px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Masthead */
-.mast { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 28px; padding-bottom: 18px; border-bottom: 1px solid var(--line-strong); }
-.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.sprig { width: 46px; height: 46px; flex: none; }
-.eyebrow { margin: 0 0 2px; font: 500 11px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(25px, 3.2vw, 32px); line-height: 1.1; letter-spacing: -.015em; font-variation-settings: "opsz" 72; text-wrap: balance; }
-@media (max-width: 480px) { .eyebrow .wide { display: none; } }
-.bankcount { margin: 4px 0 0; font: italic 400 14px var(--display); color: var(--muted); }
-.switches { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
-.modes { display: inline-flex; gap: 2px; }
-.modes button { border: 0; background: transparent; color: var(--muted); font: 600 13.5px var(--body); padding: 8px 12px 7px; cursor: pointer; border-bottom: 2px solid transparent; }
-.modes button:hover { color: var(--ink); }
-.modes button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.modes.exam { padding: 3px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); }
-.modes.exam button { border: 0; border-radius: 999px; padding: 6px 14px; }
-.modes.exam button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-.modes button:disabled { opacity: .45; cursor: not-allowed; }
+/* Top bar: the one place to navigate. Menus open on hover with a mouse, and on click, tap or keyboard everywhere. */
+:root { --content: 860px; }
+body[data-mode="garden"] { --content: 1120px; }
+.topbar { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--paper) 86%, transparent); -webkit-backdrop-filter: saturate(1.2) blur(10px); backdrop-filter: saturate(1.2) blur(10px);
+  border-bottom: 1px solid var(--line); }
+.bar-in { max-width: calc(var(--content) + 32px); margin: 0 auto; height: 56px; display: flex; align-items: stretch; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mark { flex: none; align-self: center; width: 30px; height: 30px; padding: 0; margin-right: 10px; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.mark svg { display: block; width: 100%; height: 100%; }
+.menu { position: relative; display: flex; }
+.menu.end { margin-left: auto; }
+.menu-btn { display: inline-flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted);
+  font: 500 14px var(--body); white-space: nowrap; cursor: pointer; }
+.menu-btn:hover, .menu.open > .menu-btn { color: var(--ink); }
+.menu-btn[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+.menu-btn .chev { width: 11px; height: 11px; opacity: .5; }
+.menu.open > .menu-btn .chev { transform: rotate(180deg); }
+.menu-btn.exam { padding-left: 0; color: var(--ink); font: 600 18px var(--display); font-variation-settings: "opsz" 36; letter-spacing: -.01em; }
+.menu-btn .cur { overflow: hidden; max-width: 22ch; text-overflow: ellipsis; color: var(--muted); font-weight: 400; }
+.menu-btn .cur:empty { display: none; }
+.menu-btn.icon { padding: 0 6px 0 10px; }
+.menu-btn.icon svg { width: 20px; height: 20px; }
+.bar-sep { align-self: center; width: 1px; height: 18px; margin: 0 8px 0 6px; background: var(--line-strong); }
+.pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 2; min-width: 220px; padding: 6px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(40, 30, 10, .06), 0 18px 40px -16px rgba(40, 30, 10, .4); opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: opacity .12s, transform .12s, visibility 0s linear .12s; }
+.pop::before { content: ""; position: absolute; left: 0; right: 0; top: -9px; height: 9px; } /* bridge so the pointer can travel from button to menu */
+.menu.end .pop { left: auto; right: 0; }
+.menu.open > .pop { opacity: 1; visibility: visible; transform: none; transition: opacity .12s, transform .12s; }
+.pop.wide { width: 320px; }
+.mi { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; width: 100%; padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: var(--ink);
+  font: 400 14px var(--body); text-align: left; cursor: pointer; }
+.mi:hover, .mi:focus-visible { background: var(--surface-2); outline: none; }
+.mi[aria-checked="true"] { font-weight: 600; }
+.mi .note { font: 400 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.mi.danger { color: var(--bad); }
+.pop hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line); }
+.narrow-only { display: none !important; }
+[hidden] { display: none !important; }
+.linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
+.linkish:hover { text-decoration-color: currentColor; }
+.linkish.quiet { color: var(--muted); font-size: 13.5px; }
+/* Beds, listed in the Practise menu */
+.beds { display: flex; flex-direction: column; }
+.bed-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: baseline; width: 100%; padding: 7px 10px 9px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--ink); font: 400 14px/1.3 var(--body); text-align: left; cursor: pointer; }
+.bed-row:hover, .bed-row:focus-visible { background: var(--surface-2); outline: none; }
+.bed-row[aria-pressed="true"] { background: var(--accent-soft); font-weight: 600; }
+.bed-row .bed-n { margin-right: 4px; font: 500 11.5px var(--mono); color: var(--muted); }
+.bed-row .bed-v { font: 400 12px var(--mono); color: var(--muted); font-weight: 400; }
+.bed-row .stack { grid-column: 1 / -1; height: 4px; }
+.bed-row.wilt .bed-v { color: var(--bad); }
+.beds hr { width: 100%; }
+/* Readiness line: exam-weighted progress and the bed most worth tending next */
+.ready { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 2px 2px 0; font-size: 13.5px; color: var(--muted); }
+.ready b { color: var(--ink); font-weight: 600; }
+.ready .score { color: var(--ink); font: 600 17px var(--display); font-variation-settings: "opsz" 30; font-variant-numeric: lining-nums tabular-nums; }
+.ready .meter { display: inline-block; width: 64px; height: 4px; margin-left: 4px; overflow: hidden; border-radius: 2px; background: var(--soil-soft); vertical-align: middle; }
+.ready .meter i { display: block; height: 100%; background: var(--accent); }
+.ready .dot { color: var(--line-strong); }
+.ready .go { margin-left: auto; font-size: 13.5px; }
+.ready .here { margin-left: auto; color: var(--accent); }
+body:not([data-mode="drill"]) .ready { display: none; }
+/* Status line under the sheet: session numbers on the left, keyboard hints on the right */
+.status { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; min-height: 20px; font: 400 12.5px var(--body); color: var(--muted); }
+.status .keys { font-size: 12px; }
+.status kbd { padding: 1px 5px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); color: var(--ink); font: 500 11px var(--mono); }
+@media (hover: none) { .status .keys { display: none; } }
 
-/* Section filters: seed-packet labels */
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chips[hidden] { display: none; }
-.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 5px 10px; font: 500 13px var(--body); cursor: pointer; }
-.chip:hover { border-color: var(--line-strong); }
-.chip .w { font: 400 11px var(--mono); color: var(--muted); margin-left: 6px; }
-.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
-.chip[aria-pressed="true"] .w { color: inherit; opacity: .8; }
-.chip.missed[aria-pressed="true"] { border-color: var(--bad); background: var(--bad); color: var(--surface); }
-
-/* Cards */
-.grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
-@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; min-width: 0; box-shadow: var(--shadow); }
-main.card { padding: 26px 28px 24px; }
-@media (max-width: 560px) { main.card { padding: 20px 18px; } .card { padding: 18px; } }
-.meta { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font: 400 12px var(--mono); color: var(--muted); margin-bottom: 14px; }
+/* The question sits on one sheet; everything else sits directly on the paper. */
+/* Specimen sheet: flat paper with hairline rules. A label strip on top, ruled answers, a footer strip for actions.
+   --px and --pb are the sheet's side and bottom padding; strips and answer rows bleed to the edges using them. */
+.sheet { --px: 36px; --pb: 30px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 var(--px) var(--pb); min-width: 0;
+  box-shadow: 0 1px 2px rgba(60, 45, 20, .05); }
+.sheet > :first-child:not(.meta) { margin-top: var(--pb); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font: 400 12px var(--mono); color: var(--muted); margin-bottom: 14px; }
+.sheet > .meta { margin: 0 calc(-1 * var(--px)) 26px; padding: 12px var(--px); background: var(--surface-2); border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; }
 /* Plant marker: a wooden stake label with a pointed end */
 .tag { display: inline-flex; align-items: center; font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--stake-ink); background: var(--stake);
   padding: 6px 10px 6px 16px; clip-path: polygon(9px 0, 100% 0, 100% 100%, 9px 100%, 0 50%); border-radius: 0 3px 3px 0; }
 .tag.repeat { background: var(--warn-soft); color: var(--warn); }
-.q { font-family: var(--display); font-size: 21px; line-height: 1.38; font-weight: 500; font-variation-settings: "opsz" 28; letter-spacing: -.005em; margin: 0 0 20px; text-wrap: pretty; }
+.q { font-family: var(--display); font-size: 22px; line-height: 1.36; font-weight: 500; font-variation-settings: "opsz" 30; letter-spacing: -.008em; margin: 0 0 24px; text-wrap: pretty; }
 code { font-family: var(--mono); font-size: .86em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
 .q code { font-size: .78em; vertical-align: .05em; }
 
-/* Options: each letter sits in a seed */
-.opts { display: flex; flex-direction: column; gap: 9px; }
-.opt { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left; width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-  border-radius: 10px; padding: 11px 14px; font: 15px/1.5 var(--body); cursor: pointer; }
-.opt .k { width: 28px; height: 28px; margin-top: -2px; display: grid; place-items: center; border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%; border: 1px solid var(--line-strong);
-  font: 500 12.5px var(--mono); color: var(--muted); background: var(--surface-2); }
-.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--surface-2); }
+/* Answers: a ruled list across the sheet; each letter sits in a seed */
+.opts { display: flex; flex-direction: column; margin-inline: calc(-1 * var(--px)); border-top: 1px solid var(--line); }
+.opt { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; align-items: start; text-align: left; width: 100%; border: 0; border-bottom: 1px solid var(--line);
+  border-radius: 0; background: transparent; color: var(--ink); padding: 14px var(--px); font: 15.5px/1.5 var(--body); cursor: pointer; box-shadow: inset 3px 0 0 transparent; }
+.opt .k { width: 26px; height: 26px; margin-top: -1px; display: grid; place-items: center; border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%; border: 1px solid var(--line-strong);
+  font: 500 12px var(--mono); color: var(--muted); background: var(--surface); }
+.opt:hover:not(:disabled) { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
 .opt:hover:not(:disabled) .k { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.opt.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
 .opt.sel .k { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.right { background: var(--good-soft); box-shadow: inset 3px 0 0 var(--good); }
 .opt.right .k { background: var(--good); border-color: var(--good); color: var(--surface); }
-.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt.wrong { background: var(--bad-soft); box-shadow: inset 3px 0 0 var(--bad); }
 .opt.wrong .k { background: var(--bad); border-color: var(--bad); color: var(--surface); }
 .opt:disabled { cursor: default; }
-.opt:disabled:not(.right):not(.wrong) { opacity: .7; }
+.opt:disabled:not(.right):not(.wrong) { color: var(--muted); }
 
-/* Feedback: a field note */
-.feedback { overflow-wrap: anywhere; margin-top: 18px; padding: 14px 16px; background: var(--surface-2); border: 1px solid var(--line); border-left: 4px solid var(--line-strong); border-radius: 4px 10px 10px 4px; }
+/* Feedback: a field note set off by a single rule, not a box */
+.feedback { overflow-wrap: anywhere; margin-top: 26px; padding: 2px 0 2px 18px; border-left: 2px solid var(--line-strong); }
 .feedback.ok { border-left-color: var(--good); }
 .feedback.no { border-left-color: var(--bad); }
-.feedback strong { display: block; margin-bottom: 4px; font: 600 17px var(--display); font-variation-settings: "opsz" 24; }
+.feedback strong { display: block; margin-bottom: 4px; font: 600 18px var(--display); font-variation-settings: "opsz" 24; }
 .feedback.ok strong { color: var(--good); }
 .feedback.no strong { color: var(--bad); }
-.feedback a { display: inline-block; margin-top: 6px; font: 400 12px var(--mono); overflow-wrap: anywhere; }
-.growth { margin-top: 10px; display: flex; gap: 10px; align-items: center; font-size: 13.5px; padding: 8px 14px 8px 8px; border-radius: 999px; background: var(--soil-soft); width: fit-content; max-width: 100%; }
-.growth.bloomed { background: var(--bloom-soft); }
-.growth.wilted { background: var(--bad-soft); }
-.growth .plant { width: 30px; height: 30px; }
+.feedback a { display: inline-block; margin-top: 8px; font: 400 12px var(--mono); overflow-wrap: anywhere; }
+/* Next strip: the sheet's footer becomes the way on. Left: what happened to the plant. Right: the next question. */
+.sheet > .next-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 28px calc(-1 * var(--px)) calc(-1 * var(--pb)); padding: 12px var(--px) 12px calc(var(--px) - 4px);
+  border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; background: var(--surface-2); cursor: pointer; }
+.next-strip.grew, .next-strip.held { background: var(--good-soft); border-top-color: color-mix(in srgb, var(--good) 22%, var(--line)); }
+.next-strip.bloomed { background: var(--bloom-soft); border-top-color: color-mix(in srgb, var(--bloom) 22%, var(--line)); }
+.next-strip.wilted { background: var(--bad-soft); border-top-color: color-mix(in srgb, var(--bad) 22%, var(--line)); }
+.next-strip:hover { background-image: linear-gradient(var(--tint), var(--tint)); }
+.next-out { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; font-size: 13.5px; color: var(--ink); }
+.next-out .plant { width: 30px; height: 30px; margin-block: -4px; }
+.next-out .sep { color: var(--muted); }
+.next-out .linkish { font-size: 13px; }
+.next-go { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; padding: 4px 0; border: 0; background: none; color: var(--ink); cursor: pointer;
+  font: 600 16px var(--display); font-variation-settings: "opsz" 24; letter-spacing: -.005em; }
+.next-go:focus-visible { outline: none; }
+.next-go .arr { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(30, 40, 20, .2); }
+.next-go .arr svg { width: 15px; height: 15px; }
+.next-go:focus-visible .arr { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.next-strip.wilted .next-go .arr { background: var(--ink); color: var(--paper); }
 @media (prefers-reduced-motion: no-preference) {
-  .growth.grew .plant, .growth.bloomed .plant { transform-origin: 50% 90%; animation: sprout .55s cubic-bezier(.2, .9, .3, 1.3) both; }
-  .opt, .chip, .modes button, .btn, .plot button { transition: border-color .15s, background-color .15s, color .15s, transform .15s; }
+  .next-strip.grew .next-out .plant, .next-strip.bloomed .next-out .plant { transform-origin: 50% 90%; animation: sprout .55s cubic-bezier(.2, .9, .3, 1.3) both; }
+  .next-go .arr { transition: transform .18s ease; }
+  .next-strip:hover .next-go .arr, .next-go:focus-visible .arr { transform: translateX(4px); }
+  .opt, .bed-row, .btn, .plot button { transition: border-color .15s, background-color .15s, color .15s, box-shadow .15s, transform .15s; }
 }
 @keyframes sprout { from { transform: scale(.4) translateY(4px); opacity: 0; } }
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 18px; }
-.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 9px 16px; font: 600 14px var(--body); cursor: pointer; }
-.btn:hover { filter: brightness(1.08); }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
-.btn.ghost { background: transparent; color: var(--accent); border-color: var(--line-strong); }
-.btn.ghost:hover { border-color: var(--accent); background: var(--accent-soft); filter: none; }
-.btn.danger { border-color: transparent; background: transparent; color: var(--bad); padding-inline: 8px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--bad) 40%, transparent); }
-.btn.danger:hover { filter: none; text-decoration-color: var(--bad); }
-.confirm .btn.danger { border-color: var(--bad); text-decoration: none; padding-inline: 14px; }
+.sheet > .actions:last-child { margin: 28px calc(-1 * var(--px)) calc(-1 * var(--pb)); padding: 14px var(--px); background: var(--surface-2); border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; }
+.sheet > .opts + .actions:last-child { margin-top: 0; border-top: 0; }
+/* Before answering, the ruled answers run to the bottom edge of the sheet */
+.sheet > .opts:last-child { margin-bottom: calc(-1 * var(--pb)); }
+.sheet > .opts:last-child .opt:last-child { border-bottom: 0; border-radius: 0 0 8px 8px; }
+/* Buttons: primary is solid forest, secondary is neutral paper with a hairline. Keyboard shortcuts sit inside as small keys. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 38px; padding: 0 16px; border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--accent); color: var(--accent-ink); font: 600 14px/1 var(--body); letter-spacing: .005em; white-space: nowrap; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 1px 2px rgba(30, 40, 20, .14); }
+.btn:hover { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); border-color: color-mix(in srgb, var(--accent) 86%, var(--ink)); }
+.btn:active { transform: translateY(1px); box-shadow: none; }
+.btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
+.btn.sm { height: 32px; padding: 0 14px; font-size: 13.5px; }
+.btn.ghost { background: var(--surface); color: var(--ink); border-color: var(--line-strong); box-shadow: 0 1px 2px rgba(60, 45, 20, .06); }
+.btn.ghost:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--ink) 28%, var(--line-strong)); }
+.btn.ghost:disabled:hover { background: var(--surface); border-color: var(--line-strong); }
+.btn.destructive { background: var(--bad); border-color: var(--bad); color: var(--surface); }
+.btn.destructive:hover { background: color-mix(in srgb, var(--bad) 86%, var(--ink)); border-color: color-mix(in srgb, var(--bad) 86%, var(--ink)); }
 .hint { font: 400 12px var(--mono); color: var(--muted); }
 
-/* Rail */
-.rail { display: flex; flex-direction: column; gap: 14px; }
-.rail .card { padding: 18px 20px; }
-.rail h2 { font: italic 500 18px var(--display); font-variation-settings: "opsz" 24; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
-.kpi b { display: block; font: 600 26px/1.1 var(--display); font-variant-numeric: lining-nums tabular-nums; font-variation-settings: "opsz" 48; }
-.kpi span { font-size: 12px; color: var(--muted); }
-.kpi.bloom b { color: var(--bloom); }
 .secs { display: flex; flex-direction: column; gap: 9px; }
 .sec { display: grid; grid-template-columns: 26px minmax(0, 1fr) 54px; gap: 10px; align-items: center; font-size: 13px; }
 .sec .n { font: 500 12px var(--mono); color: var(--muted); }
@@ -152,10 +211,6 @@ code { font-family: var(--mono); font-size: .86em; background: var(--surface-2);
 .bar i { background: var(--accent); }
 .bar i.lo { background: var(--bad); } .bar i.mid { background: var(--warn); } .bar i.hi { background: var(--good); }
 .small { font-size: 13px; color: var(--muted); }
-.rail .small { margin: 0; }
-.rail .actions { margin-top: 12px; }
-textarea#copyfallback { width: 100%; height: 140px; font: 12px var(--mono); margin-top: 8px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
-.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--ink); }
 
 /* Timed mock */
 .timer { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; }
@@ -184,99 +239,114 @@ main .secs { margin-top: 4px; }
 .plot .plant { width: 24px; height: 24px; }
 .s1 { background: var(--seed); } .s2 { background: color-mix(in srgb, var(--leaf) 45%, var(--soil-soft)); } .s3 { background: color-mix(in srgb, var(--leaf) 80%, var(--soil-soft)); } .s4 { background: var(--bud); } .s5 { background: var(--bloom); }
 
-.theme-toggle { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; }
-.theme-toggle:hover { border-color: var(--accent); background: var(--accent-soft); }
-.theme-toggle svg { width: 18px; height: 18px; }
-.theme-toggle .moon { display: none; }
-:root[data-theme="dark"] .theme-toggle .sun { display: none; }
-:root[data-theme="dark"] .theme-toggle .moon { display: block; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme-toggle .sun { display: none; } :root:not([data-theme="light"]) .theme-toggle .moon { display: block; } }
-.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+/* Dialog for confirmations, and a toast for quick results */
+.dlg { width: min(400px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--ink);
+  box-shadow: 0 2px 4px rgba(40, 30, 10, .06), 0 28px 56px -20px rgba(40, 30, 10, .45); }
+.dlg::backdrop { background: rgba(25, 30, 18, .35); }
+.dlg-body { padding: 20px 22px 4px; }
+.dlg-body h2 { margin: 0 0 6px; font: 600 19px var(--display); font-variation-settings: "opsz" 30; }
+.dlg-body p { margin: 0; color: var(--muted); font-size: 14px; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 18px 22px 20px; }
+.copybox { width: 100%; height: 160px; margin-top: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--ink); font: 12px var(--mono); }
+.toast { position: fixed; left: 50%; bottom: 24px; z-index: 60; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 8px; background: var(--ink); color: var(--paper);
+  font: 500 13.5px var(--body); box-shadow: 0 12px 28px -12px rgba(0, 0, 0, .45); opacity: 0; pointer-events: none; transform: translate(-50%, 10px); transition: opacity .18s, transform .18s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.foot a { color: var(--muted); }
+
+/* Phones */
+@media (max-width: 640px) {
+  .bar-in { height: 52px; }
+  .wide-only { display: none !important; }
+  .pop .narrow-only { display: flex !important; }
+  .pop hr.narrow-only { display: block !important; }
+  .menu { position: static; }
+  /* The bar's backdrop filter makes it the containing block, so these sit just under the bar, full width */
+  .pop, .pop.wide, .menu.end .pop { position: fixed; top: calc(100% + 6px); left: 8px; right: 8px; width: auto; max-height: calc(100dvh - 72px); overflow: auto; }
+  .menu-btn { padding: 0 8px; }
+  .menu-btn.exam { font-size: 17px; }
+  .menu-btn .cur { max-width: 11ch; }
+  .bar-sep { margin: 0 4px; }
+  .wrap { padding-block: 12px 28px; gap: 12px; }
+  .sheet { --px: 18px; --pb: 20px; }
+  .q { font-size: 19px; }
+  /* Keep Next within reach after answering */
+  .sheet .next-strip { position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 5; border-radius: 0; }
+  .sheet .actions:has(#fwd, #submit) { position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 5; margin-inline: calc(-1 * var(--px)); padding: 12px var(--px);
+    background: var(--surface-2); border-top: 1px solid var(--line); }
+  .ready .detail, .ready .meter, .next-out .more { display: none; }
+  .ready .dot { display: none; }
+  .ready > span:first-child::after { content: " ·"; color: var(--line-strong); }
+  .ready .go, .ready .here { margin-left: auto; }
+  .sheet > .next-strip { flex-wrap: nowrap; gap: 12px; }
+  .next-go { font-size: 15px; gap: 10px; }
+  .next-go .word { display: none; }
+  .next-out { flex-wrap: nowrap; white-space: nowrap; }
+  .foot { flex-direction: column; }
+}
+@media (hover: none) { .hint { display: none; } }
+@media (prefers-reduced-motion: reduce) { .pop, .toast { transition: none; } }
 </style>
 <script>
 // Apply a saved light/dark choice before the page paints. With no saved choice the page follows the system setting.
 try { const t = localStorage.getItem("de-practice-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
 
-<div class="wrap">
-  <header class="mast">
-    <div class="brand">
-      <svg class="sprig" viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="24" cy="24" r="23" fill="var(--accent-soft)"/>
-        <path d="M24 38V17" stroke="var(--leaf)" stroke-width="2.2" stroke-linecap="round"/>
-        <path d="M24 31c-2.2-5-6.6-6.2-10-6c.4 4.4 4.2 7 10 6z" fill="var(--leaf)"/>
-        <path d="M24 26c2-4.6 6.2-5.8 9.4-5.6c-.4 4.2-4 6.6-9.4 5.6z" fill="var(--leaf)"/>
-        <g fill="var(--bloom)"><circle cx="24" cy="10.6" r="3"/><circle cx="27.4" cy="13.1" r="3"/><circle cx="26.1" cy="17" r="3"/><circle cx="21.9" cy="17" r="3"/><circle cx="20.6" cy="13.1" r="3"/></g>
-        <circle cx="24" cy="14.2" r="2" fill="var(--bud)"/>
-        <path d="M13 38.5h22" stroke="var(--soil)" stroke-width="2.4" stroke-linecap="round"/>
+<header class="topbar">
+  <div class="bar-in">
+    <button class="mark" id="home" type="button" aria-label="Back to practice" title="Back to practice">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="23" fill="var(--accent-soft)"/>
+      <path d="M24 38V17" stroke="var(--leaf)" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M24 31c-2.2-5-6.6-6.2-10-6c.4 4.4 4.2 7 10 6z" fill="var(--leaf)"/>
+      <path d="M24 26c2-4.6 6.2-5.8 9.4-5.6c-.4 4.2-4 6.6-9.4 5.6z" fill="var(--leaf)"/>
+      <g fill="var(--bloom)"><circle cx="24" cy="10.6" r="3"/><circle cx="27.4" cy="13.1" r="3"/><circle cx="26.1" cy="17" r="3"/><circle cx="21.9" cy="17" r="3"/><circle cx="20.6" cy="13.1" r="3"/></g>
+      <circle cx="24" cy="14.2" r="2" fill="var(--bud)"/>
+      <path d="M13 38.5h22" stroke="var(--soil)" stroke-width="2.4" stroke-linecap="round"/>
       </svg>
-      <div>
-        <p class="eyebrow">Databricks certification<span class="wide"> · knowledge garden</span></p>
-        <h1 id="title">Data Engineer Associate Practice</h1>
-        <p class="bankcount" id="bankcount"></p>
-      </div>
+    </button>
+    <div class="menu" id="menu-exam">
+      <button class="menu-btn exam" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="pop-exam"><span id="title">Associate</span><svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <div class="pop" id="pop-exam" role="menu" aria-label="Exam"></div>
     </div>
-    <div class="switches">
-      <div class="modes exam" role="group" aria-label="Exam">
-        <button id="exam-assoc" aria-pressed="true">Associate</button>
-        <button id="exam-pro" aria-pressed="false">Professional</button>
-      </div>
-      <div class="modes" role="group" aria-label="Mode">
-        <button id="mode-drill" aria-pressed="true">Drill</button>
-        <button id="mode-exam" aria-pressed="false">Timed mock</button>
-        <button id="mode-garden" aria-pressed="false">Garden</button>
-      </div>
-      <button class="theme-toggle" id="theme" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
-        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
-        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <div class="menu" id="menu-practise">
+      <button class="menu-btn" id="m-practise" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="beds">Practise<span class="cur" id="cur-bed"></span><svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <div class="pop wide" role="menu" aria-label="Choose a bed to practise"><div class="beds" id="beds"></div></div>
+    </div>
+    <button class="menu-btn wide-only" id="to-mock" type="button">Mock exam</button>
+    <button class="menu-btn wide-only" id="to-garden" type="button">Garden</button>
+    <div class="menu end" id="menu-more">
+      <button class="menu-btn icon" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="pop-more" aria-label="More">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="15.5" cy="10" r="1.5"/></svg>
       </button>
+      <div class="pop" id="pop-more" role="menu" aria-label="More">
+        <button class="mi narrow-only" type="button" role="menuitem" id="to-mock-m">Mock exam</button>
+        <button class="mi narrow-only" type="button" role="menuitem" id="to-garden-m">Garden</button>
+        <hr class="narrow-only">
+        <button class="mi" type="button" role="menuitem" id="copy">Copy wilting questions</button>
+        <button class="mi" type="button" role="menuitem" id="export">Export progress</button>
+        <button class="mi" type="button" role="menuitem" id="import">Import progress…</button>
+        <hr>
+        <button class="mi" type="button" role="menuitem" id="theme">Dark mode</button>
+        <hr>
+        <button class="mi danger" type="button" role="menuitem" id="reset">Reset progress…</button>
+      </div>
     </div>
-  </header>
-  <div class="chips" id="chips" role="group" aria-label="Filter by section"></div>
-  <div class="grid">
-    <main class="card" id="main" aria-live="polite"></main>
-    <aside class="rail">
-      <section class="card">
-        <h2>This session</h2>
-        <div class="kpis">
-          <div class="kpi"><b id="k-ans">0</b><span>answered</span></div>
-          <div class="kpi"><b id="k-acc">–</b><span>correct</span></div>
-          <div class="kpi"><b id="k-pace">–</b><span>sec per answer</span></div>
-          <div class="kpi"><b id="k-due">0</b><span>misses to repeat</span></div>
-          <div class="kpi"><b id="k-grew">0</b><span>plants grew</span></div>
-          <div class="kpi bloom"><b id="k-bloom">0</b><span>in bloom (all-time)</span></div>
-        </div>
-      </section>
-      <section class="card">
-        <h2>Beds by section</h2>
-        <div class="secs" id="secs"></div>
-      </section>
-      <section class="card">
-        <h2>Your misses</h2>
-        <p class="small">Copy the list of questions you've missed and paste it to Claude for a targeted explanation.</p>
-        <div class="actions" style="margin-top:8px">
-          <button class="btn ghost" id="copy">Copy misses</button>
-          <button class="btn danger" id="reset">Reset progress</button>
-        </div>
-        <div id="copyout"></div>
-      </section>
-      <section class="card">
-        <h2>Back up progress</h2>
-        <p class="small">Your garden is saved only in this browser. Export a backup file to keep it safe if browser data is cleared, or import one to carry on from another device. The file covers both exams.</p>
-        <div class="actions" style="margin-top:8px">
-          <button class="btn ghost" id="export">Export progress</button>
-          <button class="btn ghost" id="import">Import progress</button>
-          <input type="file" id="importfile" accept=".json,application/json" hidden>
-        </div>
-        <div id="backupout" class="small" role="status"></div>
-      </section>
-    </aside>
   </div>
+</header>
+<div class="wrap">
+  <div class="ready" id="ready"></div>
+  <main class="card sheet" id="main" aria-live="polite"></main>
+  <div class="status"><span id="stats"></span><span class="keys" id="keys"></span></div>
   <footer class="foot">
     <span>Unofficial practice questions, not affiliated with or endorsed by Databricks. The Databricks docs are the source of truth.</span>
     <a href="https://github.com/edxhayter/databricks-data-engineer-cert-practice" target="_blank" rel="noopener">Source on GitHub</a>
   </footer>
 </div>
+<input type="file" id="importfile" accept=".json,application/json" hidden>
+<dialog class="dlg" id="dlg"><div class="dlg-body" id="dlg-body"></div><div class="dlg-actions" id="dlg-actions"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="questions/associate.js"></script>
 <script src="questions/professional.js"></script>
@@ -289,13 +359,13 @@ const OLD_KEYS = { assoc: "de-associate-practice-v1", pro: "de-professional-prac
 const BACKUP_APP = "databricks-de-practice";
 const EXAMS = {
   assoc: {
-    title: "Data Engineer Associate Practice", bank: BANK, links: LINKS, total: 45, minutes: 90,
+    title: "Data Engineer Associate Practice", name: "Associate", bank: BANK, links: LINKS, total: 45, minutes: 90,
     sections: { 1: "Platform", 2: "Ingestion", 3: "Transform", 4: "Jobs", 5: "CI/CD", 6: "Optimize", 7: "Governance" },
     weight: { 1: 6, 2: 21, 3: 22, 4: 16, 5: 10, 6: 10, 7: 15 },
     split: { 1: 3, 2: 9, 3: 10, 4: 7, 5: 5, 6: 4, 7: 7 },
   },
   pro: {
-    title: "Data Engineer Professional Practice", bank: PBANK, links: {}, total: 60, minutes: 120,
+    title: "Data Engineer Professional Practice", name: "Professional", bank: PBANK, links: {}, total: 60, minutes: 120,
     sections: { 1: "Code", 2: "Ingestion", 3: "Manipulation", 4: "Monitoring", 5: "Cost & perf", 6: "Security", 7: "Governance", 8: "Debug & deploy", 9: "Modeling" },
     weight: { 1: 23, 2: 12, 3: 12, 4: 10, 5: 15, 6: 8, 7: 5, 8: 10, 9: 5 },
     split: { 1: 14, 2: 7, 3: 7, 4: 6, 5: 9, 6: 5, 7: 3, 8: 6, 9: 3 },
@@ -478,13 +548,14 @@ function guessed() {
   save(); renderDrill(); renderRail();
 }
 function growthMsg(o) {
-  const n = (st) => STAGE[st].toLowerCase();
-  if (o.kind === "grew") return `${o.from === 0 ? "Seed planted" : "Grew to " + n(o.to)} (${o.to}/5). It comes back in about ${GAP[o.to]} questions.`;
-  if (o.kind === "bloomed") return "In bloom! It will come back now and then to check it has stuck.";
-  if (o.kind === "held") return `Still in bloom. Next check in about ${GAP[5]} questions.`;
-  if (o.kind === "guessed") return "Marked as a guess, so it didn't grow. It will come back in a few questions.";
-  if (o.fresh || o.from === o.to) return "Not rooted yet. It will come back in a few questions.";
-  return `Reset from ${n(o.from)} (${o.from}/5) back to the start. It will come back in a few questions.`;
+  // The part after the dot is detail that phones drop to keep the strip on one line.
+  const n = (st) => STAGE[st].toLowerCase(), more = (t) => `<span class="more"> <span class="sep">·</span> ${t}</span>`;
+  if (o.kind === "grew") return (o.from === 0 ? "Seed planted" : "Grew to " + n(o.to)) + more(`back in ~${GAP[o.to]} questions`);
+  if (o.kind === "bloomed") return "In bloom";
+  if (o.kind === "held") return "Still in bloom" + more(`next check in ~${GAP[5]}`);
+  if (o.kind === "guessed") return "Marked as a guess" + more("back soon");
+  if (o.fresh || o.from === o.to) return "Not rooted yet" + more("back in a few questions");
+  return `Reset from ${n(o.from)}` + more("back in a few questions");
 }
 
 // ---- drill render ----
@@ -507,19 +578,21 @@ function renderDrill() {
   if (picked !== null) {
     const ok = perm[picked] === 0, url = link(q);
     h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
-    h += `</div><div class="growth ${outcome.kind}">${plant(outcome.to)}<span>${growthMsg(outcome)}</span></div>`;
+    h += `</div>`;
     const canGuess = ok && outcome.kind !== "guessed";
-    h += `<div class="actions"><button class="btn" id="next">Next question</button>${canGuess ? `<button class="btn ghost" id="guess">I guessed</button>` : ""}<span class="hint">Enter or Space${canGuess ? " · G if you guessed" : ""}</span></div>`;
-  } else {
-    h += `<div class="actions"><span class="hint">Press 1–4 or A–D to answer</span></div>`;
+    h += `<div class="next-strip ${outcome.kind}"><span class="next-out">${plant(outcome.to)}<span>${growthMsg(outcome)}</span>${canGuess ? `<span class="sep">·</span><button class="linkish quiet" id="guess" type="button" aria-keyshortcuts="G">I guessed</button>` : ""}</span>`;
+    h += `<button class="next-go" id="next" type="button" aria-keyshortcuts="Enter Space" aria-label="Next question">Next<span class="word"> question</span><span class="arr" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span></button></div>`;
   }
   $("main").innerHTML = h;
   $("main").querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => answer(Number(b.dataset.slot))));
-  const n = $("next"); if (n) { n.addEventListener("click", nextQ); n.focus({ preventScroll: true }); }
+  const strip = $("main").querySelector(".next-strip");
+  if (strip) strip.addEventListener("click", (e) => { if (!e.target.closest("#guess")) nextQ(); }); // the whole strip moves on
+  const n = $("next"); if (n) n.focus({ preventScroll: true });
   const gb = $("guess"); if (gb) gb.addEventListener("click", guessed);
+  renderStatus();
 }
 function renderEmpty() {
-  $("main").innerHTML = `<p class="q">No questions match this filter.</p><p class="small">${store.filter === "missed" ? "You have no misses to repeat. Pick a section or All." : "Pick another filter."}</p>`;
+  $("main").innerHTML = `<p class="q">No questions match this filter.</p><p class="small">${store.filter === "missed" ? "No wilting questions right now." : "Nothing here yet."}</p>`;
   cur = null;
 }
 
@@ -548,9 +621,9 @@ function renderExam() {
   const id = exam.ids[exam.i], q = BANKX[id], p = exam.perms[exam.i], pick = exam.picks[exam.i];
   let h = `<div class="meta"><span class="tag">Question ${exam.i + 1} of ${n}</span><span class="timer" id="timer"></span></div><p class="q">${fmt(q[1])}</p><div class="opts">`;
   p.forEach((oi, slot) => { h += `<button class="opt ${pick === slot ? "sel" : ""}" data-slot="${slot}"><span class="k">${LETTERS[slot]}</span><span>${fmt(q[2][oi])}</span></button>`; });
-  h += `</div><div class="actions"><button class="btn ghost" id="prev" ${exam.i === 0 ? "disabled" : ""}>Back</button>`;
-  h += exam.i < last ? `<button class="btn" id="fwd">Next</button>` : `<button class="btn" id="submit">Submit exam</button>`;
-  h += `<span class="hint">1–4 / A–D to pick · Enter for next · no feedback until you submit</span></div><div class="dots">`;
+  h += `</div><div class="actions"><button class="btn ghost sm" id="prev" aria-keyshortcuts="ArrowLeft" ${exam.i === 0 ? "disabled" : ""}>Back</button>`;
+  h += exam.i < last ? `<button class="btn sm" id="fwd" aria-keyshortcuts="Enter ArrowRight">Next</button>` : `<button class="btn sm" id="submit">Submit exam</button>`;
+  h += `</div><div class="dots">`;
   exam.ids.forEach((_, k) => { h += `<button class="${exam.picks[k] !== null ? "done" : ""} ${k === exam.i ? "cur" : ""}" data-k="${k}" aria-label="Go to question ${k + 1}">${k + 1}</button>`; });
   h += `</div>`;
   $("main").innerHTML = h; renderTimer();
@@ -559,6 +632,7 @@ function renderExam() {
   const pv = $("prev"); if (pv) pv.addEventListener("click", () => { exam.i--; renderExam(); });
   const fw = $("fwd"); if (fw) fw.addEventListener("click", () => { exam.i++; renderExam(); });
   const sb = $("submit"); if (sb) sb.addEventListener("click", submitExam);
+  renderStatus();
 }
 function submitExam() {
   exam.done = true; clearInterval(tick);
@@ -577,7 +651,7 @@ function renderResults() {
   exam.ids.forEach((id, k) => { const sec = BANKX[id][0], ok = exam.picks[k] !== null && exam.perms[k][exam.picks[k]] === 0; bySec[sec] = bySec[sec] || [0, 0]; bySec[sec][1]++; if (ok) { score++; bySec[sec][0]++; } });
   let h = `<div class="meta"><span class="tag">Timed ${n} · results</span><span>${exam.took} min</span></div><p class="q">${score} / ${n} (${Math.round(score / n * 100)}%)</p><div class="secs">`;
   Object.keys(bySec).sort((a, b) => a - b).forEach((s) => { const [c, m] = bySec[s], pc = c / m; h += `<div class="sec"><span class="n">S${s}</span><div class="bar" title="${X.sections[s]}"><i class="${pc < .6 ? "lo" : pc < .8 ? "mid" : "hi"}" style="width:${pc * 100}%"></i></div><span class="v">${c}/${m}</span></div>`; });
-  h += `</div><p class="small" style="margin-top:12px">Every miss has been added to Drill as a repeat. The mock doesn’t grow or reset any plants. Switch to Drill and pick “Missed” to work through them.</p><div class="actions"><button class="btn" id="again">New timed mock</button><button class="btn ghost" id="todrill">Drill my misses</button></div><div class="review">`;
+  h += `</div><p class="small" style="margin-top:12px">Each miss is now a wilting question and comes back in practice. The mock doesn’t grow or reset any plants.</p><div class="actions"><button class="btn sm" id="todrill">Practise wilting questions</button><button class="btn ghost sm" id="again">New mock</button></div><div class="review">`;
   exam.ids.forEach((id, k) => {
     const q = BANKX[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
     if (ok) return;
@@ -589,40 +663,90 @@ function renderResults() {
   $("todrill").addEventListener("click", () => { store.filter = "missed"; save(); setMode("drill"); });
 }
 
-// ---- rail ----
-function renderRail() {
-  $("k-ans").textContent = session.answered;
-  $("k-acc").textContent = session.answered ? Math.round(session.correct / session.answered * 100) + "%" : "–";
-  $("k-pace").textContent = session.answered && mode === "drill" ? Math.round(session.time / session.answered / 1000) : "–";
-  $("k-due").textContent = Object.values(store.retry).filter((v) => v > 0).length;
-  $("k-grew").textContent = session.grew;
-  $("k-bloom").textContent = BANKX.filter((_, i) => gst(i) === 5).length;
-  let h = "";
-  Object.keys(X.sections).forEach((sec) => {
-    const ids = BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)), n = ids.length, by = [0, 0, 0, 0, 0, 0];
-    ids.forEach((i) => { const st = gst(i); if (st > 0) by[st]++; });
-    const tip = `${X.sections[sec]}: ` + [1, 2, 3, 4, 5].map((k) => `${by[k]} ${STAGE[k].toLowerCase()}`).join(", ") + `, ${n - by.slice(1).reduce((a, b) => a + b, 0)} not yet planted`;
-    h += `<div class="sec"><span class="n">S${sec}</span><div class="stack" title="${tip}">${[5, 4, 3, 2, 1].map((k) => (by[k] ? `<i class="s${k}" style="width:${by[k] / n * 100}%"></i>` : "")).join("")}</div><span class="v" title="in bloom">${by[5]}/${n}</span></div>`;
-  });
-  $("secs").innerHTML = h;
-  renderChips();
+// ---- progress: status line, strip, menus ----
+const allIds = () => BANKX.map((_, i) => i);
+function grow(ids) {
+  const by = [0, 0, 0, 0, 0, 0], n = ids.length || 1;
+  ids.forEach((i) => { const st = gst(i); if (st > 0) by[st]++; });
+  return { by, html: `<span class="stack" aria-hidden="true">${[5, 4, 3, 2, 1].map((k) => (by[k] ? `<i class="s${k}" style="width:${by[k] / n * 100}%"></i>` : "")).join("")}</span>` };
 }
-function renderChips() {
-  const missed = BANKX.map((_, i) => i).filter((i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0)).length;
-  let h = `<button class="chip" data-f="all" aria-pressed="${store.filter === "all"}">All<span class="w">${BANKX.length}</span></button>`;
-  Object.keys(X.sections).forEach((s) => { h += `<button class="chip" data-f="${s}" aria-pressed="${store.filter === s}">S${s} ${X.sections[s]}<span class="w">${X.weight[s]}%</span></button>`; });
-  h += `<button class="chip missed" data-f="missed" aria-pressed="${store.filter === "missed"}">Missed<span class="w">${missed}</span></button>`;
-  $("chips").innerHTML = h;
-  $("chips").hidden = mode !== "drill";
-  $("chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { store.filter = b.dataset.f; save(); queue = []; renderChips(); nextQ(); }));
+const bedName = (f) => (f === "all" ? "All beds" : f === "missed" ? "Wilting questions" : `S${f} ${X.sections[f]}`);
+const isWilting = (i) => store.retry[i] > 0 || (store.stats[i] && store.stats[i].w > 0);
+function renderRail() {
+  renderStatus(); renderReady(); renderBeds(); renderExamMenu();
+  $("to-mock").textContent = $("to-mock-m").textContent = exam && !exam.done ? "Resume mock" : "Mock exam";
+  $("m-practise").setAttribute("aria-current", mode === "drill" ? "page" : "false");
+  $("to-mock").setAttribute("aria-current", mode === "exam" ? "page" : "false");
+  $("to-garden").setAttribute("aria-current", mode === "garden" ? "page" : "false");
+}
+function renderStatus() {
+  const s = session, parts = [];
+  if (mode === "drill") {
+    if (s.answered) { parts.push(`${s.answered} answered`, `${Math.round(s.correct / s.answered * 100)}% correct`); if (s.grew) parts.push(`${s.grew} grew`); }
+    else parts.push(`${BANKX.filter((_, i) => gst(i) === 5).length} of ${BANKX.length} in bloom`);
+  }
+  let keys = "";
+  if (mode === "drill" && cur !== null) keys = picked === null ? "<kbd>1</kbd>–<kbd>4</kbd> to answer" : `<kbd>Enter</kbd> or <kbd>Space</kbd> for next${$("guess") ? " · <kbd>G</kbd> if you guessed" : ""}`;
+  else if (mode === "exam" && exam && !exam.done) keys = "<kbd>1</kbd>–<kbd>4</kbd> to pick · <kbd>Enter</kbd> next · <kbd>←</kbd> back";
+  $("stats").textContent = parts.join(" · ");
+  $("keys").innerHTML = keys;
+}
+// Readiness: each section counts by its exam weight, and each plant by its stage (a bloom fully, a seed a fifth).
+// The weakest bed is the one with the most exam weight still to grow.
+function renderReady() {
+  const all = allIds(), secs = Object.keys(X.sections);
+  let ready = 0, weak = null, gap = -1;
+  secs.forEach((sec) => {
+    const ids = all.filter((i) => BANKX[i][0] === Number(sec));
+    const grown = ids.reduce((a, i) => a + Math.max(gst(i), 0), 0) / (5 * (ids.length || 1));
+    ready += X.weight[sec] * grown;
+    const left = X.weight[sec] * (1 - grown);
+    if (left > gap) { gap = left; weak = { sec, ids, blooms: ids.filter((i) => gst(i) === 5).length }; }
+  });
+  const pct = Math.round(ready);
+  let h = `<span title="Weighted by the exam's section weights. Each plant counts by its stage: a bloom fully, a seed a fifth.">Exam readiness <span class="score">${pct}%</span><span class="meter" aria-hidden="true"><i style="width:${pct}%"></i></span></span>`;
+  if (weak && gap > 0.5) {
+    h += `<span class="dot" aria-hidden="true">·</span><span>Weakest: <b>${X.sections[weak.sec]}</b><span class="detail">, ${X.weight[weak.sec]}% of the exam, ${weak.blooms} of ${weak.ids.length} in bloom</span></span>`;
+    h += store.filter === weak.sec ? `<span class="here">Tending it now</span>` : `<button class="linkish go" id="go-weak" type="button">Practise it →</button>`;
+  }
+  $("ready").innerHTML = h;
+  const g = $("go-weak"); if (g) g.addEventListener("click", () => pickBed(weak.sec));
+}
+function renderBeds() {
+  const all = allIds();
+  const row = (f, cls, name, count, stack) =>
+    `<button class="bed-row ${cls}" type="button" role="menuitemradio" data-f="${f}" aria-checked="${store.filter === f}" aria-pressed="${store.filter === f}"><span class="bed-name">${name}</span><span class="bed-v">${count}</span>${stack}</button>`;
+  const A = grow(all);
+  let h = row("all", "all", "All beds", `${A.by[5]}/${all.length}`, A.html) + "<hr>";
+  Object.keys(X.sections).forEach((sec) => {
+    const ids = all.filter((i) => BANKX[i][0] === Number(sec)), g = grow(ids);
+    h += row(sec, "", `<span class="bed-n">S${sec}</span>${X.sections[sec]}`, `${g.by[5]}/${ids.length}`, g.html);
+  });
+  h += "<hr>" + row("missed", "wilt", "Wilting questions", all.filter(isWilting).length, "");
+  $("beds").innerHTML = h;
+  $("beds").querySelectorAll(".bed-row").forEach((b) => b.addEventListener("click", () => pickBed(b.dataset.f)));
+  $("cur-bed").textContent = store.filter === "all" ? "" : "· " + (store.filter === "missed" ? "Wilting" : X.sections[store.filter]);
+}
+function renderExamMenu() {
+  $("pop-exam").innerHTML = Object.keys(EXAMS).filter((id) => EXAMS[id].bank.length).map((id) => {
+    let blooms;
+    if (id === examId) blooms = BANKX.filter((_, i) => gst(i) === 5).length;
+    else { const sv = readSaved(id); blooms = sv ? Object.keys(sv.garden).filter((q) => q in EXAMS[id].pos && sv.garden[q].st === 5).length : 0; }
+    return `<button class="mi" type="button" role="menuitemradio" aria-checked="${id === examId}" data-exam="${id}"><span>${EXAMS[id].name}</span><span class="note">${blooms}/${EXAMS[id].bank.length} in bloom</span></button>`;
+  }).join("");
+  $("pop-exam").querySelectorAll(".mi").forEach((b) => b.addEventListener("click", () => { closeMenus(); if (b.dataset.exam !== examId) setExam(b.dataset.exam); }));
+}
+function pickBed(f) {
+  closeMenus();
+  store.filter = f; save(); queue = [];
+  if (mode !== "drill") setMode("drill"); else { renderRail(); nextQ(); }
 }
 
 // ---- garden view ----
 function renderGarden() {
   const by = [0, 0, 0, 0, 0, 0, 0]; // index st+1
   BANKX.forEach((_, i) => by[gst(i) + 1]++);
-  let h = `<div class="meta"><span class="tag">Garden</span><span>${by[6]} of ${BANKX.length} in bloom</span></div>`;
-  h += `<p class="small" style="margin:0 0 8px">Each question is a plant. A correct answer plants a seed, and each further correct answer grows it one stage, up to a bloom at 5. A wrong answer resets it. Plants come back at widening intervals, and blooms come back now and then to check they've stuck. Click any plant to practise that question.</p>`;
+  let h = `<div class="meta"><span class="tag">${X.name} garden</span><span>${by[6]} of ${BANKX.length} in bloom</span></div>`;
   h += `<div class="garden-head">` + [-1, 0, 1, 2, 3, 4, 5].map((st) => `<span>${plant(st)}${st < 0 ? "Not seen" : STAGE[st]} <b>${by[st + 1]}</b></span>`).join("") + `</div>`;
   Object.keys(X.sections).forEach((sec) => {
     const ids = BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)).sort((a, b) => gst(b) - gst(a));
@@ -643,31 +767,66 @@ function setExam(id) {
   loadStore();
   session = { answered: 0, correct: 0, time: 0, grew: 0 };
   queue = []; cur = null; lastId = null; exam = null; clearInterval(tick);
-  $("exam-assoc").setAttribute("aria-pressed", id === "assoc"); $("exam-pro").setAttribute("aria-pressed", id === "pro");
-  $("title").textContent = X.title; document.title = X.title;
-  $("bankcount").textContent = BANKX.length + " questions, one plant each";
-  $("mode-exam").textContent = "Timed " + X.total;
-  setMode(mode);
+  $("title").textContent = X.name; document.title = X.title;
+  setMode(mode === "exam" ? "drill" : mode);
 }
 function setMode(m, id) {
-  mode = m;
-  ["drill", "exam", "garden"].forEach((k) => $("mode-" + k).setAttribute("aria-pressed", m === k));
+  if (m !== mode) window.scrollTo(0, 0);
+  mode = m; document.body.dataset.mode = m;
   if (m === "drill") { clearInterval(tick); if (id !== undefined) show(id); else nextQ(); }
   else if (m === "garden") { clearInterval(tick); renderGarden(); }
   else if (!exam || exam.done) startExam(); else { tick = setInterval(renderTimer, 1000); renderExam(); }
   renderRail();
 }
-$("exam-assoc").addEventListener("click", () => setExam("assoc"));
-$("exam-pro").addEventListener("click", () => setExam("pro"));
-$("mode-drill").addEventListener("click", () => setMode("drill"));
-$("mode-exam").addEventListener("click", () => setMode("exam"));
-$("mode-garden").addEventListener("click", () => setMode("garden"));
-if (!PBANK.length) $("exam-pro").disabled = true;
+const go = (m) => () => { closeMenus(); setMode(m); };
+$("home").addEventListener("click", go("drill"));
+["to-mock", "to-mock-m"].forEach((id) => $(id).addEventListener("click", go("exam")));
+["to-garden", "to-garden-m"].forEach((id) => $(id).addEventListener("click", go("garden")));
+
+// ---- menus: hover to open with a mouse; click, tap or keyboard everywhere ----
+const fineHover = window.matchMedia ? window.matchMedia("(hover: hover) and (pointer: fine)") : { matches: false };
+const menus = [...document.querySelectorAll(".menu")];
+const menuItems = (m) => [...m.querySelectorAll(".pop .mi, .pop .bed-row")].filter((el) => el.offsetParent !== null);
+function openMenu(m, how) {
+  menus.forEach((x) => { if (x !== m) closeMenu(x); });
+  m.classList.add("open"); m.dataset.how = how;
+  m.querySelector(".menu-btn").setAttribute("aria-expanded", "true");
+  if (how === "key") { const first = menuItems(m).find((el) => el.getAttribute("aria-checked") === "true") || menuItems(m)[0]; if (first) first.focus(); }
+}
+function closeMenu(m) {
+  if (!m.classList.contains("open")) return;
+  m.classList.remove("open");
+  m.querySelector(".menu-btn").setAttribute("aria-expanded", "false");
+}
+function closeMenus() { menus.forEach(closeMenu); }
+menus.forEach((m) => {
+  const btn = m.querySelector(".menu-btn");
+  let timer = 0;
+  m.addEventListener("mouseenter", () => { if (!fineHover.matches) return; clearTimeout(timer); timer = setTimeout(() => { if (!m.classList.contains("open")) openMenu(m, "hover"); }, 70); });
+  m.addEventListener("mouseleave", () => { if (!fineHover.matches) return; clearTimeout(timer); timer = setTimeout(() => { if (m.dataset.how === "hover") closeMenu(m); }, 240); });
+  btn.addEventListener("click", () => {
+    if (!m.classList.contains("open")) openMenu(m, "click");
+    else if (m.dataset.how === "hover") m.dataset.how = "click"; // clicking a menu that hover opened keeps it open
+    else closeMenu(m);
+  });
+  btn.addEventListener("keydown", (e) => { if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") { e.preventDefault(); openMenu(m, "key"); } });
+  m.querySelector(".pop").addEventListener("keydown", (e) => {
+    const list = menuItems(m), i = list.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); (list[i + 1] || list[0]).focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); (list[i - 1] || list[list.length - 1]).focus(); }
+    else if (e.key === "Escape") { e.preventDefault(); closeMenu(m); btn.focus(); }
+    else if (e.key === "Tab") closeMenu(m);
+  });
+});
+document.addEventListener("click", (e) => menus.forEach((m) => { if (!m.contains(e.target)) closeMenu(m); }));
 
 // ---- keyboard ----
 document.addEventListener("keydown", (e) => {
+  if (document.querySelector(".menu.open") || $("dlg").open) { if (e.key === "Escape") closeMenus(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea/i.test(e.target.tagName)) return;
   const k = e.key.toLowerCase(), slot = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
+  // Enter and Space on a focused control outside the sheet (a menu button, say) do that control's job.
+  if ((k === "enter" || k === " ") && e.target.closest && e.target.closest("button") && !e.target.closest("#main")) return;
   if (mode === "drill") {
     if (slot >= 0 && picked === null) { e.preventDefault(); answer(slot); }
     else if ((k === "enter" || k === " ") && picked !== null) { e.preventDefault(); nextQ(); }
@@ -681,76 +840,87 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// ---- misses export & reset ----
+// ---- dialog and toast ----
+function ask({ title, text, ok, danger, onOk, body }) {
+  $("dlg-body").innerHTML = `<h2>${title}</h2>${text ? `<p>${text}</p>` : ""}${body || ""}`;
+  $("dlg-actions").innerHTML = ok
+    ? `<button class="btn ghost sm" type="button" data-v="no">Cancel</button><button class="btn sm${danger ? " destructive" : ""}" type="button" data-v="ok">${ok}</button>`
+    : `<button class="btn sm" type="button" data-v="no">Done</button>`;
+  $("dlg-actions").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { $("dlg").close(); if (b.dataset.v === "ok" && onOk) onOk(); }));
+  $("dlg").showModal();
+}
+$("dlg").addEventListener("click", (e) => { if (e.target === $("dlg")) $("dlg").close(); }); // backdrop click
+let toastTimer = 0;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600); }
+
+// ---- wilting questions, backups and reset (the ⋯ menu) ----
 $("copy").addEventListener("click", () => {
+  closeMenus();
   const rows = BANKX.map((q, i) => [q, i]).filter(([, i]) => store.stats[i] && store.stats[i].w > 0)
     .sort((a, b) => store.stats[b[1]].w - store.stats[a[1]].w)
     .map(([q, i]) => `S${q[0]} | missed ${store.stats[i].w}x, right ${store.stats[i].c}x | ${q[1].replace(/`/g, "")} | Answer: ${q[2][0].replace(/`/g, "")}`);
-  const text = rows.length ? `My ${X.title} misses:\n` + rows.join("\n") : "No misses yet.";
-  const done = () => { $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy misses"), 1500); };
-  const fallback = () => { $("copyout").innerHTML = `<textarea id="copyfallback" readonly></textarea>`; $("copyfallback").value = text; $("copyfallback").select(); };
-  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  if (!rows.length) return toast("No wilting questions yet");
+  const text = `My ${X.title} wilting questions:\n` + rows.join("\n");
+  const fallback = () => ask({ title: "Copy wilting questions", text: "Your browser blocked the clipboard, so select the text and copy it.", body: `<textarea class="copybox" readonly>${esc(text)}</textarea>` });
+  try { navigator.clipboard.writeText(text).then(() => toast(`Copied ${rows.length} wilting question${rows.length === 1 ? "" : "s"}`), fallback); } catch (e) { fallback(); }
 });
 $("reset").addEventListener("click", () => {
-  $("copyout").innerHTML = `<div class="confirm" style="margin-top:8px"><span>Clear all ${X.title} progress and misses?</span><button class="btn danger" id="yes">Clear</button><button class="btn ghost" id="no">Keep</button></div>`;
-  $("yes").addEventListener("click", () => { store = { stats: {}, retry: {}, filter: "all", garden: {}, tick: 0 }; orphans = { stats: {}, retry: {}, garden: {} }; save(); session = { answered: 0, correct: 0, time: 0, grew: 0 }; $("copyout").innerHTML = ""; setMode(mode); });
-  $("no").addEventListener("click", () => ($("copyout").innerHTML = ""));
+  closeMenus();
+  ask({ title: `Reset ${X.name} progress?`, text: "This clears the garden, wilting questions and stats for this exam in this browser. Export a backup first if you might want them back.", ok: "Reset", danger: true,
+    onOk: () => { store = { stats: {}, retry: {}, filter: "all", garden: {}, tick: 0 }; orphans = { stats: {}, retry: {}, garden: {} }; save(); session = { answered: 0, correct: 0, time: 0, grew: 0 }; setMode(mode); toast("Progress reset"); } });
 });
-
-// ---- backup: export & import ----
-const backupNote = (html) => { $("backupout").innerHTML = html ? `<div style="margin-top:8px">${html}</div>` : ""; };
-const plantCount = (s, id) => Object.keys(s.garden).filter((qid) => qid in EXAMS[id].pos).length;
+const plantCount = (sv, id) => Object.keys(sv.garden).filter((qid) => qid in EXAMS[id].pos).length;
+const summarise = (exams) => Object.keys(exams).map((id) => `${EXAMS[id].name}: ${plantCount(exams[id], id)} plants`).join(" · ");
 $("export").addEventListener("click", () => {
+  closeMenus();
   const data = { app: BACKUP_APP, format: 2, exported: new Date().toISOString(), exams: {} };
-  Object.keys(EXAMS).forEach((id) => { const s = id === examId ? toSaved() : readSaved(id); if (s) data.exams[id] = s; });
-  if (!Object.keys(data.exams).length) return backupNote("Nothing to export yet. Answer a few questions first.");
+  Object.keys(EXAMS).forEach((id) => { const sv = id === examId ? toSaved() : readSaved(id); if (sv) data.exams[id] = sv; });
+  if (!Object.keys(data.exams).length) return toast("Nothing to export yet");
   try {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url; a.download = `databricks-practice-progress-${data.exported.slice(0, 10)}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    backupNote("Backup downloaded. " + Object.keys(data.exams).map((id) => `${EXAMS[id].title.replace(/^Data Engineer | Practice$/g, "")}: ${plantCount(data.exams[id], id)} plants`).join(" · "));
-  } catch (e) { backupNote("Your browser blocked the download."); }
+    toast("Backup downloaded · " + summarise(data.exams));
+  } catch (e) { toast("Your browser blocked the download"); }
 });
-$("import").addEventListener("click", () => { backupNote(""); $("importfile").click(); });
+$("import").addEventListener("click", () => { closeMenus(); $("importfile").click(); });
 $("importfile").addEventListener("change", (ev) => {
   const file = ev.target.files && ev.target.files[0];
   ev.target.value = "";
   if (!file) return;
   const r = new FileReader();
-  r.onerror = () => backupNote("Couldn't read that file.");
+  r.onerror = () => toast("Couldn't read that file");
   r.onload = () => {
     let data = null;
     try { data = JSON.parse(r.result); } catch (e) {}
-    if (!data || data.app !== BACKUP_APP || !data.exams || typeof data.exams !== "object") return backupNote("That file isn't a progress backup from this page.");
+    if (!data || data.app !== BACKUP_APP || !data.exams || typeof data.exams !== "object") return toast("That file isn't a progress backup from this page");
     const found = {};
-    Object.keys(EXAMS).forEach((id) => { const s = clean(data.exams[id], EXAMS[id]); if (s) found[id] = s; });
-    if (!Object.keys(found).length) return backupNote("That backup doesn't contain any progress.");
+    Object.keys(EXAMS).forEach((id) => { const sv = clean(data.exams[id], EXAMS[id]); if (sv) found[id] = sv; });
+    if (!Object.keys(found).length) return toast("That backup doesn't contain any progress");
     const when = typeof data.exported === "string" ? new Date(data.exported) : null;
-    const summary = Object.keys(found).map((id) => `${EXAMS[id].title.replace(/^Data Engineer | Practice$/g, "")}: ${plantCount(found[id], id)} plants`).join(" · ");
-    backupNote(`<div class="confirm"><span>Replace the progress in this browser with this backup${when && !isNaN(when) ? ` from ${esc(when.toLocaleDateString())}` : ""}? ${summary}</span><button class="btn danger" id="importyes">Replace</button><button class="btn ghost" id="importno">Cancel</button></div>`);
-    $("importno").addEventListener("click", () => backupNote(""));
-    $("importyes").addEventListener("click", () => {
-      try { Object.keys(found).forEach((id) => localStorage.setItem(KEYS[id], JSON.stringify(found[id]))); }
-      catch (e) { return backupNote("Your browser wouldn't save the imported progress."); }
-      setExam(examId);
-      backupNote("Progress imported. " + summary);
-    });
+    ask({ title: "Replace progress with this backup?", text: `${when && !isNaN(when) ? `Saved ${esc(when.toLocaleDateString())}. ` : ""}${summarise(found)}. This replaces the progress in this browser.`, ok: "Replace", danger: true,
+      onOk: () => {
+        try { Object.keys(found).forEach((id) => localStorage.setItem(KEYS[id], JSON.stringify(found[id]))); }
+        catch (e) { return toast("Your browser wouldn't save the imported progress"); }
+        setExam(examId);
+        toast("Progress imported");
+      } });
   };
   r.readAsText(file);
 });
 
-// ---- light / dark toggle ----
+// ---- light / dark ----
 // The choice is remembered in this browser; until someone picks one, the page follows the system setting.
 const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : !!(darkQuery && darkQuery.matches); };
-function labelTheme() { const l = isDark() ? "Switch to light mode" : "Switch to dark mode"; $("theme").setAttribute("aria-label", l); $("theme").title = l; }
+function labelTheme() { $("theme").textContent = isDark() ? "Light mode" : "Dark mode"; }
 $("theme").addEventListener("click", () => {
   const t = isDark() ? "light" : "dark";
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem("de-practice-theme", t); } catch (e) {}
-  labelTheme();
+  labelTheme(); closeMenus();
 });
 if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener("change", labelTheme);
 labelTheme();
