@@ -13,7 +13,7 @@
   --line: #ddd4c1; --line-strong: #c5b99f;
   --accent: #2e5e3e; --accent-ink: #fbf9f3; --accent-soft: #e2eadb;
   --good: #3a7a3e; --good-soft: #e4eedb; --bad: #a8472a; --bad-soft: #f6e3d9; --warn: #8f630f; --warn-soft: #f4e8cc;
-  --soil: #8a6a4f; --soil-soft: #e8dcc6; --seed: #7a5230; --leaf: #3f8a4f; --bud: #c48a1c; --bloom: #b7476f; --bloom-soft: #f5e1e8;
+  --soil: #8a6a4f; --soil-soft: #e8dcc6; --seed: #a07a55; --leaf: #3f8a4f; --bud: #c48a1c; --bloom: #b7476f; --bloom-soft: #f5e1e8;
   --stake: #e9dcc0; --stake-ink: #574329;
   --grain: rgba(90, 70, 35, .09);
   --shadow: 0 1px 2px rgba(60, 45, 20, .05), 0 10px 24px -18px rgba(60, 45, 20, .35);
@@ -184,8 +184,19 @@ main .secs { margin-top: 4px; }
 .plot .plant { width: 24px; height: 24px; }
 .s1 { background: var(--seed); } .s2 { background: color-mix(in srgb, var(--leaf) 45%, var(--soil-soft)); } .s3 { background: color-mix(in srgb, var(--leaf) 80%, var(--soil-soft)); } .s4 { background: var(--bud); } .s5 { background: var(--bloom); }
 
+.theme-toggle { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; }
+.theme-toggle:hover { border-color: var(--accent); background: var(--accent-soft); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle .moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .moon { display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme-toggle .sun { display: none; } :root:not([data-theme="light"]) .theme-toggle .moon { display: block; } }
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
 </style>
+<script>
+// Apply a saved light/dark choice before the page paints. With no saved choice the page follows the system setting.
+try { const t = localStorage.getItem("de-practice-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 
 <div class="wrap">
   <header class="mast">
@@ -215,6 +226,10 @@ main .secs { margin-top: 4px; }
         <button id="mode-exam" aria-pressed="false">Timed mock</button>
         <button id="mode-garden" aria-pressed="false">Garden</button>
       </div>
+      <button class="theme-toggle" id="theme" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg>
+      </button>
     </div>
   </header>
   <div class="chips" id="chips" role="group" aria-label="Filter by section"></div>
@@ -725,6 +740,20 @@ $("importfile").addEventListener("change", (ev) => {
   };
   r.readAsText(file);
 });
+
+// ---- light / dark toggle ----
+// The choice is remembered in this browser; until someone picks one, the page follows the system setting.
+const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : !!(darkQuery && darkQuery.matches); };
+function labelTheme() { const l = isDark() ? "Switch to light mode" : "Switch to dark mode"; $("theme").setAttribute("aria-label", l); $("theme").title = l; }
+$("theme").addEventListener("click", () => {
+  const t = isDark() ? "light" : "dark";
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("de-practice-theme", t); } catch (e) {}
+  labelTheme();
+});
+if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener("change", labelTheme);
+labelTheme();
 
 setExam(examId);
 })();
