@@ -40,15 +40,16 @@ The page, the question bank and this README were written by **Claude** (Anthropi
 - **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses go back into drill mode. The mock doesn't grow or reset plants.
 - **Separate progress per exam.** Each exam keeps its own history, misses and section stats.
 - **Progress tracking.** Garden stages by section, pace (seconds per answer), and a "Copy misses" button that copies your weak spots as text.
+- **Backups.** "Export progress" downloads your garden for both exams as a small JSON file. "Import progress" loads one back, after showing what's in it and asking before it replaces anything. Use it to keep a backup or to move to another browser or device.
 - **Keyboard first.** Press `1`–`4` or `A`–`D` to answer, `Enter` or `Space` for the next question, and `G` if you guessed.
 
-Progress is saved in your browser's `localStorage`. It stays on your machine and isn't shared.
+Progress is saved in your browser's `localStorage`. It stays on your machine and isn't shared, and clearing site data clears it too, so export a backup now and then.
 
 ## Run it yourself
 
-It's one self-contained HTML file. Its only external request is for Google Fonts, and it falls back to system fonts when offline.
+It's a static page with no build step. Its only external request is for Google Fonts, and it falls back to system fonts when offline.
 
-- **Open it directly:** download `src/practice.html` and open it in a browser.
+- **Open it directly:** download the `src/` folder and open `src/practice.html` in a browser. The page loads the question banks from `src/questions/`, so keep the folder together.
 - **Serve it locally:**
   ```bash
   python3 -m http.server 8000
@@ -118,5 +119,18 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
 ## Files
 
 - `index.html`: a redirect so the site root opens the drill.
-- `src/practice.html`: the whole app. The question bank is embedded as a JavaScript array: `[section, question, [correct, wrong, wrong, wrong], explanation, docKey or docs URL]`, with one bank per exam. The correct option is listed first in the data and shuffled when shown.
-- `README.md`: this file.
+- `src/practice.html`: the app (layout, styles and the drill, garden and mock exam logic).
+- `src/questions/associate.js` and `src/questions/professional.js`: the question banks, one per exam. Each question is a JavaScript array: `[id, section, question, [correct, wrong, wrong, wrong], explanation, docKey or docs URL]`. The correct option is listed first in the data and shuffled when shown. They're plain scripts rather than JSON so the page still works when opened straight from disk.
+- `scripts/check-questions.js`: checks the banks before publishing. Run `node scripts/check-questions.js`.
+
+### Editing the question banks without losing anyone's progress
+
+Every question has a permanent id (`A001`–`A278` for Associate, `P001`–`P200` for Professional). Garden progress is saved in each visitor's browser against that id, so:
+
+- **Reordering, rewording and deleting questions is safe.** Progress follows the id. If a question is deleted, its saved progress is kept and comes back if the question does.
+- **Give a new question the next unused number** (for example `A279`) and add it anywhere in its bank.
+- **Never change or reuse an id.** Giving a different question an old id would hand it someone else's plant.
+- **Run `node scripts/check-questions.js` before publishing.** It fails if an id is duplicated or badly formed, and it also checks options, sections and docs links.
+- Keep the page at the same address and don't rename the storage keys in `practice.html` (`de-associate-practice-v2`, `de-professional-practice-v2`). Browser storage belongs to the site's address, so moving to a different domain or renaming a key starts everyone from scratch (unless they import a backup).
+
+**How the switch to ids handled existing progress.** Before ids, progress was saved against each question's position under the `-v1` keys. The ids were numbered in the order the questions already had, so position 0 became `A001`, position 1 became `A002`, and so on. The first time someone opens the updated page, it converts their `-v1` progress to ids, saves it under the `-v2` keys, and leaves the `-v1` copy untouched as a fallback.
