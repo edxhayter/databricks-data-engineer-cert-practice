@@ -35,14 +35,14 @@ The page, the question bank and this README were written by **Claude** (Anthropi
   - **A wrong answer resets it.** Any stage, bloom included, goes back to "not rooted yet". The question comes back 3–6 questions later and stays in rotation until you get it right twice more.
   - **"I guessed".** After a lucky correct answer, press `G` or click "I guessed". The plant doesn't grow and the question comes back soon.
   - **What comes next.** About two picks in three are plants that are due back, longest overdue first. The rest are new questions, and blooms come back when their recheck is due.
-  - **Garden view.** Every question in the bank laid out by section (each section is a "bed"), so you can see weak sections at a glance. Click any plant to practise that question.
+  - **Garden view.** Every question in the bank laid out by section (each section is a "bed"), so you can see weak sections at a glance. Click any plant to open that question.
   - **After each answer** the foot of the question shows what happened to the plant. Click anywhere on it, or press `Enter` or `Space`, for the next question.
 - **Navigation.** One bar across the top. Menus open on hover with a mouse, and on click, tap or the keyboard:
   - **Associate ▾ / Professional ▾** switches exam.
-  - **Practise ▾** picks what to drill: all beds, one section, or your **wilting questions** (the ones you've missed).
+  - **Practice ▾** picks what to drill: all beds, one section, or your **wilting questions** (the ones you've missed).
   - **Mock exam** and **Garden** open those views. The sprig logo takes you back to practice.
   - **⋯** holds Copy wilting questions, Export, Import, Dark mode and Reset.
-- **Exam readiness.** A line above the question shows readiness weighted by the exam's section weights (each plant counts by its stage, a bloom fully and a seed a fifth) and names the weakest bed, with a link to practise it.
+- **Exam readiness.** A line above the question shows readiness weighted by the exam's section weights (each plant counts by its stage, a bloom fully and a seed a fifth) and names the weakest bed, with a "Tend it" link that switches to it.
 - **Timed mock.** Associate: 45 questions in 90 minutes, split 3 / 9 / 10 / 7 / 5 / 4 / 7 by section. Professional: 60 questions in 120 minutes, split 14 / 7 / 7 / 6 / 9 / 5 / 3 / 6 / 3. No feedback until you submit, and the misses become wilting questions. The mock doesn't grow or reset plants.
 - **Separate progress per exam.** Each exam keeps its own history, wilting questions and section stats.
 - **Copy wilting questions.** Copies your misses as text, for example to ask Claude for a targeted explanation.
