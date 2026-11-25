@@ -278,7 +278,7 @@ main .secs { margin-top: 4px; }
   .sheet .next-strip { position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 5; border-radius: 0; }
   .sheet .actions:has(#fwd, #submit) { position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 5; margin-inline: calc(-1 * var(--px)); padding: 12px var(--px);
     background: var(--surface-2); border-top: 1px solid var(--line); }
-  .ready .detail, .ready .meter, .next-out .more { display: none; }
+  .ready .detail, .ready .meter { display: none; }
   .ready .dot { display: none; }
   .ready > span:first-child::after { content: " ·"; color: var(--line-strong); }
   .ready .go, .ready .here { margin-left: auto; }
@@ -454,7 +454,12 @@ function save() { try { localStorage.setItem(KEYS[examId], JSON.stringify(toSave
 // ---- garden ----
 // Stage 0 = answered but not yet right; 1–5 = seed → bloom. Every correct answer grows one stage; a wrong answer resets to 0.
 // GAP[st] = roughly how many questions pass before a plant at that stage comes back.
-const GAP = [0, 5, 15, 40, 80, 150];
+// Each gap gets a random ±25% spread so plants first met together drift apart instead of returning as a block.
+const GAP = [0, 4, 10, 22, 45, 120];
+const spread = (g) => g + rand(-Math.floor(g / 4), Math.floor(g / 4));
+// Share of picks that are new questions, by how many plants are due: fewer new ones while reviews are waiting,
+// so plants come back close to on time instead of piling up.
+const newShare = (nDue) => (nDue <= 5 ? 0.5 : nDue <= 15 ? 1 / 3 : 0.15);
 const STAGE = ["Not rooted yet", "Seed", "Sprout", "Seedling", "Bud", "Bloom"];
 const gst = (i) => (store.garden[i] ? store.garden[i].st : -1);
 const stageLabel = (st) => (st < 0 ? "New question" : st === 0 ? STAGE[0] : `${STAGE[st]} ${st}/5`);
@@ -494,8 +499,9 @@ function pool() {
   if (store.filter === "all") return ids;
   return ids.filter((i) => BANKX[i][0] === Number(store.filter));
 }
-// Pick the next plant: due growing plants (longest overdue first) about two times in three,
-// otherwise a new question; blooms come back when their recheck is due.
+// Pick the next plant: a due growing plant, chosen at random so stages and planting groups mix,
+// or a new question (how often depends on how many plants are due, see newShare).
+// Blooms due a recheck come back when nothing else is due and no new questions are left.
 function nextQ() {
   let p = pool();
   if (p.length > 1) p = p.filter((i) => i !== lastId);
@@ -503,9 +509,8 @@ function nextQ() {
   const T = store.tick, g = store.garden, due = [], blooms = [], fresh = [], later = [];
   p.forEach((i) => { const e = g[i]; if (!e) fresh.push(i); else if (e.due <= T) (e.st === 5 ? blooms : due).push(i); else later.push(i); });
   let id;
-  if (due.length && (!fresh.length || Math.random() < 2 / 3)) {
-    due.sort((a, b) => g[a].due - g[b].due || g[a].st - g[b].st);
-    id = due[Math.floor(Math.random() * Math.min(3, due.length))];
+  if (due.length && (!fresh.length || Math.random() >= newShare(due.length))) {
+    id = due[Math.floor(Math.random() * due.length)];
   } else if (fresh.length) id = fresh[Math.floor(Math.random() * fresh.length)];
   else if (blooms.length) id = blooms.sort((a, b) => g[a].due - g[b].due)[0];
   else id = later.sort((a, b) => g[a].due - g[b].due)[0]; // nothing due: go over plants early (they won't grow)
@@ -528,7 +533,7 @@ function answer(slot) {
       e.st++; session.grew++; undo.grew = 1;
       outcome = { kind: e.st === 5 ? "bloomed" : "grew", from, to: e.st };
     } else outcome = { kind: "held", from, to: 5 };
-    e.due = T + GAP[e.st] + rand(0, Math.floor(GAP[e.st] / 5));
+    e.due = T + spread(GAP[e.st]);
     if (store.retry[cur] > 0) {
       store.retry[cur]--;
       if (store.retry[cur] > 0) e.due = Math.min(e.due, T + rand(8, 14)); else delete store.retry[cur];
@@ -555,14 +560,13 @@ function guessed() {
   save(); renderDrill(); renderRail();
 }
 function growthMsg(o) {
-  // The part after the dot is detail that phones drop to keep the strip on one line.
-  const n = (st) => STAGE[st].toLowerCase(), more = (t) => `<span class="more"> <span class="sep">·</span> ${t}</span>`;
-  if (o.kind === "grew") return (o.from === 0 ? "Seed planted" : "Grew to " + n(o.to)) + more(`back in ~${GAP[o.to]} questions`);
+  const n = (st) => STAGE[st].toLowerCase();
+  if (o.kind === "grew") return o.from === 0 ? "Seed planted" : "Grew to " + n(o.to);
   if (o.kind === "bloomed") return "In bloom";
-  if (o.kind === "held") return "Still in bloom" + more(`next check in ~${GAP[5]}`);
-  if (o.kind === "guessed") return "Marked as a guess" + more("back soon");
-  if (o.fresh || o.from === o.to) return "Not rooted yet" + more("back in a few questions");
-  return `Reset from ${n(o.from)}` + more("back in a few questions");
+  if (o.kind === "held") return "Still in bloom";
+  if (o.kind === "guessed") return "Marked as a guess";
+  if (o.fresh || o.from === o.to) return "Not rooted yet";
+  return `Reset from ${n(o.from)}`;
 }
 
 // ---- drill render ----

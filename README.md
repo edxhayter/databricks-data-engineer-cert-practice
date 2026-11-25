@@ -26,16 +26,21 @@ The page, the question bank and this README were written by **Claude** (Anthropi
   | Stage | How it gets there | Comes back after |
   |---|---|---|
   | Not rooted yet | answered, but not yet correctly | 3–6 questions |
-  | 1 Seed | first correct answer | about 5 questions |
-  | 2 Sprout | second correct answer | about 15 |
-  | 3 Seedling | third correct answer | about 40 |
-  | 4 Bud | fourth correct answer | about 80 |
-  | 5 Bloom | fifth correct answer | rechecked about every 150 |
+  | 1 Seed | first correct answer | about 4 questions |
+  | 2 Sprout | second correct answer | about 10 |
+  | 3 Seedling | third correct answer | about 22 |
+  | 4 Bud | fourth correct answer | about 45 |
+  | 5 Bloom | fifth correct answer | rechecked about every 120 |
+
+  Each gap gets a random spread of ±25%, so questions you first met together drift apart instead of all coming back at once. The page doesn't show when a question will return.
 
   - **Every correct answer grows the plant one stage.** The widening gaps only decide when a question comes back, so a plant isn't asked again straight away.
   - **A wrong answer resets it.** Any stage, bloom included, goes back to "not rooted yet". The question comes back 3–6 questions later and stays in rotation until you get it right twice more.
   - **"I guessed".** After a lucky correct answer, press `G` or click "I guessed". The plant doesn't grow and the question comes back soon.
-  - **What comes next.** About two picks in three are plants that are due back, longest overdue first. The rest are new questions, and blooms come back when their recheck is due.
+  - **What comes next.** Either a plant that's due back or a new question:
+    - **Due plants are picked at random**, not oldest first, so stages and questions you met together are mixed rather than served in a block.
+    - **New questions slow down while reviews are waiting.** With up to 5 plants due, about half of picks are new questions; with up to 15 due, about one in three; with more than that, about one in seven. Plants then come back close to on time instead of piling up.
+    - **Blooms due a recheck** come back when nothing else is due and no new questions are left.
   - **Garden view.** Every question in the bank laid out by section (each section is a "bed"), so you can see weak sections at a glance. Click any plant to open that question.
   - **After each answer** the foot of the question shows what happened to the plant. Click anywhere on it, or press `Enter` or `Space`, for the next question.
 - **Navigation.** One bar across the top. Menus open on hover with a mouse, and on click, tap or the keyboard:
@@ -110,6 +115,13 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
     - **Every explanation rewritten** (seven agents, one range each): one line on why the answer is right, then one line per wrong option. Options are shuffled, so each wrong option is named by its wording, never by letter. Where a reason wasn't already clear, six of the seven agents checked the cited docs page; the P135–P200 range was rewritten from the existing explanations without re-opening the docs, so treat its wrong-option lines with a little more caution.
     - **Corrections found along the way**: A011 is now limited to Databricks Runtime 17.3 LTS (from 18.0 the file limit is set dynamically); A089 now says file events are off (with them, the limit is 25 tables); A115 uses the Spark UI guide's 75th-percentile rule; A143 names the `READ METADATA` exception; A148 is limited to Unity Catalog compute; P010 names the `MANAGE ALLOWLIST` privilege; A055 and A183 say incremental refresh needs serverless; A042 has a better docs link; A273 and P088 are reworded. A224 (which accounts had predictive optimization on by default) was removed, because the current docs say it's on by default with no date cutoff. A131 now explains that Unity Catalog's only DENY is the ABAC DENY policy (Beta), which can deny `MANAGE ACCESS CONTROL` but not `SELECT`; the SQL `DENY` statement is Hive metastore only.
     - **Checked**: no existing id was changed and only those answers moved; the bank checks pass; all 189 cited docs URLs return HTTP 200; three agents checked every question against its exam outline. None were out of scope. A125 moved to Section 1, and A174 and A180 to Section 4. P129 was removed as a near-duplicate of P044 filed under the wrong section, and A291 because A290 already covers it. About 30 questions went deeper than the outline suggests. The 25 Associate ones and P231 (budgets) are now tagged Stretch rather than removed. AUTO CDC isn't in the Associate outline at all, and Edward only remembered the exam asking whether the default is SCD type 1 or type 2, so A151–A157 were removed and replaced by A327, which tests just that default; and both exams were tested in Chrome, including that saved progress (and the removed A224's plant) survives a reload.
+15. **Retuned when plants come back.** Edward found the garden slow to fill and the rechecks arriving in blocks. Claude simulated the scheduler (40 runs of 1,200 answers on a 318-question bank, assuming 75% correct on new questions and 88% on reviews) and found the gaps weren't the main cause. One pick in three was a new question, which created reviews faster than they could be served, so the median time from a first correct answer to bloom was about 630 answers instead of the 140 the gaps add up to. Plants first met together also came back together, because the spread was small and overdue plants were served oldest first. Picking "most overdue relative to its gap" was also tried and rejected, because buds never got picked and nothing bloomed. The changes:
+    - shorter gaps: 4 / 10 / 22 / 45, with blooms rechecked about every 120 (was 5 / 15 / 40 / 80 / 150);
+    - a ±25% spread on each gap (was 0–20%, always later);
+    - due plants picked at random instead of oldest first;
+    - fewer new questions while reviews are waiting.
+
+    In the simulation the first bloom came at about 120 answers instead of about 250, and there were 44 blooms after 500 answers instead of 16. Within one 40-question section, the longest run of seedling and bud checks fell from about 15 to about 6. The cost is meeting new questions more slowly: about 170 after 1,000 answers instead of all 318. Saved progress carries over, and the new gaps apply from each plant's next answer. The strip under each answer no longer says when a question will come back.
 
 ### Known limitations
 
