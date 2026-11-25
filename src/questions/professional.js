@@ -955,3 +955,6 @@ PBANK.push(
  "`list-runs` with `--job-id` filters to one job, and `--active-only` keeps only runs still in progress; results come back newest first.\n`--completed-only`: returns finished runs, the opposite of what's needed.\n`get-run` with `--include-history`: takes a run ID, not a job ID, and returns one run's details plus repair history.\n`--run-type JOB_RUN`: filters on how the run was created (job, submit or workflow run), not on whether it is still running.",
  "https://docs.databricks.com/aws/en/dev-tools/cli/reference/jobs-commands"]
 );
+
+// Stretch questions: in scope, but deeper than the exam outline suggests. The page tags them and keeps them out of the timed mock.
+const PBANK_STRETCH = ["P231"];

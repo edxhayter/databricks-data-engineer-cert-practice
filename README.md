@@ -4,7 +4,7 @@ An unofficial, single-page practice drill for two Databricks certifications. A t
 
 | Exam | Questions in the bank | Timed mock |
 |---|---|---|
-| Data Engineer **Associate** (guide of 4 May 2026, updated 6 Aug 2026) | 324 | 45 questions, 90 minutes |
+| Data Engineer **Associate** (guide of 4 May 2026, updated 6 Aug 2026) | 318 | 45 questions, 90 minutes |
 | Data Engineer **Professional** (guide of 9 Oct 2026) | 231 | 60 questions, 120 minutes |
 
 Every question has instant feedback. Each question is also a plant in a knowledge garden: each correct answer grows it one stage from a seed to a bloom, a wrong answer resets it, and blooms come back now and then to check they've stuck.
@@ -20,6 +20,7 @@ The page, the question bank and this README were written by **Claude** (Anthropi
 ## Features
 
 - **Drill mode.** Each answer gets instant feedback and a link to the relevant docs page. The explanation says why the right answer is right, then gives one line per wrong option saying why it doesn't fit, with the most care on the near-misses. Option order is shuffled every time.
+- **Stretch questions.** Questions that are in scope but go deeper than the exam outline suggests carry a green "Stretch" tag. They stay in the drill and the garden, but the timed mock leaves them out so it stays close to the real exam. The lists are `BANK_STRETCH` and `PBANK_STRETCH` at the end of each bank file.
 - **Knowledge garden.** Every question is a plant with six stages:
 
   | Stage | How it gets there | Comes back after |
@@ -108,7 +109,7 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
       - Professional (P201–P232): Structured Streaming versus Lakeflow pipelines, output modes, stream-stream joins, deduplication, checkpoint changes, `foreachBatch` and ForEachBatch sinks, append flows and backfills, incremental refresh policy; Kafka and Kinesis offsets, Delta streaming sources, CSV bad records; job notifications, anomaly detection, budgets and CLI run monitoring.
     - **Every explanation rewritten** (seven agents, one range each): one line on why the answer is right, then one line per wrong option. Options are shuffled, so each wrong option is named by its wording, never by letter. Where a reason wasn't already clear, six of the seven agents checked the cited docs page; the P135–P200 range was rewritten from the existing explanations without re-opening the docs, so treat its wrong-option lines with a little more caution.
     - **Corrections found along the way**: A011 is now limited to Databricks Runtime 17.3 LTS (from 18.0 the file limit is set dynamically); A089 now says file events are off (with them, the limit is 25 tables); A115 uses the Spark UI guide's 75th-percentile rule; A143 names the `READ METADATA` exception; A148 is limited to Unity Catalog compute; P010 names the `MANAGE ALLOWLIST` privilege; A055 and A183 say incremental refresh needs serverless; A042 has a better docs link; A273 and P088 are reworded. A224 (which accounts had predictive optimization on by default) was removed, because the current docs say it's on by default with no date cutoff. A131 now explains that Unity Catalog's only DENY is the ABAC DENY policy (Beta), which can deny `MANAGE ACCESS CONTROL` but not `SELECT`; the SQL `DENY` statement is Hive metastore only.
-    - **Checked**: no existing id was changed and only those answers moved; the bank checks pass; all 189 cited docs URLs return HTTP 200; three agents checked every question against its exam outline. None were out of scope. A125 moved to Section 1, and A174 and A180 to Section 4. P129 was removed as a near-duplicate of P044 filed under the wrong section, and A291 because A290 already covers it. About 30 questions, mostly new Auto Loader and pipeline scenarios, go deeper than a typical Associate question but test features the outline names, so they stay; and both exams were tested in Chrome, including that saved progress (and the removed A224's plant) survives a reload.
+    - **Checked**: no existing id was changed and only those answers moved; the bank checks pass; all 189 cited docs URLs return HTTP 200; three agents checked every question against its exam outline. None were out of scope. A125 moved to Section 1, and A174 and A180 to Section 4. P129 was removed as a near-duplicate of P044 filed under the wrong section, and A291 because A290 already covers it. About 30 questions went deeper than the outline suggests. The 25 Associate ones and P231 (budgets) are now tagged Stretch rather than removed. AUTO CDC isn't in the Associate outline at all, and Edward only remembered the exam asking whether the default is SCD type 1 or type 2, so A151–A157 were removed and replaced by A327, which tests just that default; and both exams were tested in Chrome, including that saved progress (and the removed A224's plant) survives a reload.
 
 ### Known limitations
 
@@ -140,7 +141,7 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
 
 ### Editing the question banks without losing anyone's progress
 
-Every question has a permanent id (`A001`–`A326` for Associate, `P001`–`P232` for Professional; `A224`, `A291` and `P129` were removed and must not be reused). Garden progress is saved in each visitor's browser against that id, so:
+Every question has a permanent id (`A001`–`A326` for Associate, `P001`–`P232` for Professional; `A151`–`A157`, `A224`, `A291` and `P129` were removed and must not be reused). Garden progress is saved in each visitor's browser against that id, so:
 
 - **Reordering, rewording and deleting questions is safe.** Progress follows the id. If a question is deleted, its saved progress is kept and comes back if the question does.
 - **Give a new question the next unused number** (for example `A279`) and add it anywhere in its bank.
