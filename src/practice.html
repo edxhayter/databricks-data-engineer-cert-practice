@@ -126,6 +126,7 @@ body:not([data-mode="drill"]) .ready { display: none; }
 .tag { display: inline-flex; align-items: center; font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--stake-ink); background: var(--stake);
   padding: 6px 10px 6px 16px; clip-path: polygon(9px 0, 100% 0, 100% 100%, 9px 100%, 0 50%); border-radius: 0 3px 3px 0; }
 .tag.repeat { background: var(--warn-soft); color: var(--warn); }
+.tag.stretch { background: var(--accent-soft); color: var(--accent); }
 .q { font-family: var(--display); font-size: 22px; line-height: 1.36; font-weight: 500; font-variation-settings: "opsz" 30; letter-spacing: -.008em; margin: 0 0 24px; text-wrap: pretty; }
 code { font-family: var(--mono); font-size: .86em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
 .q code { font-size: .78em; vertical-align: .05em; }
@@ -150,6 +151,9 @@ code { font-family: var(--mono); font-size: .86em; background: var(--surface-2);
 /* Feedback: a field note set off by a single rule, not a box */
 .feedback { overflow-wrap: anywhere; margin-top: 26px; padding: 2px 0 2px 18px; border-left: 2px solid var(--line-strong); }
 .feedback.ok { border-left-color: var(--good); }
+.feedback .why { display: block; }
+.whynot { margin: 8px 0 10px; padding-left: 18px; }
+.whynot li { margin: 3px 0; }
 .feedback.no { border-left-color: var(--bad); }
 .feedback strong { display: block; margin-bottom: 4px; font: 600 18px var(--display); font-variation-settings: "opsz" 24; }
 .feedback.ok strong { color: var(--good); }
@@ -359,13 +363,13 @@ const OLD_KEYS = { assoc: "de-associate-practice-v1", pro: "de-professional-prac
 const BACKUP_APP = "databricks-de-practice";
 const EXAMS = {
   assoc: {
-    title: "Data Engineer Associate Practice", name: "Associate", bank: BANK, links: LINKS, total: 45, minutes: 90,
+    title: "Data Engineer Associate Practice", name: "Associate", bank: BANK, stretch: typeof BANK_STRETCH !== "undefined" ? BANK_STRETCH : [], links: LINKS, total: 45, minutes: 90,
     sections: { 1: "Platform", 2: "Ingestion", 3: "Transform", 4: "Jobs", 5: "CI/CD", 6: "Optimize", 7: "Governance" },
     weight: { 1: 6, 2: 21, 3: 22, 4: 16, 5: 10, 6: 10, 7: 15 },
     split: { 1: 3, 2: 9, 3: 10, 4: 7, 5: 5, 6: 4, 7: 7 },
   },
   pro: {
-    title: "Data Engineer Professional Practice", name: "Professional", bank: PBANK, links: {}, total: 60, minutes: 120,
+    title: "Data Engineer Professional Practice", name: "Professional", bank: PBANK, stretch: typeof PBANK_STRETCH !== "undefined" ? PBANK_STRETCH : [], links: {}, total: 60, minutes: 120,
     sections: { 1: "Code", 2: "Ingestion", 3: "Manipulation", 4: "Monitoring", 5: "Cost & perf", 6: "Security", 7: "Governance", 8: "Debug & deploy", 9: "Modeling" },
     weight: { 1: 23, 2: 12, 3: 12, 4: 10, 5: 15, 6: 8, 7: 5, 8: 10, 9: 5 },
     split: { 1: 14, 2: 7, 3: 7, 4: 6, 5: 9, 6: 5, 7: 3, 8: 6, 9: 3 },
@@ -378,6 +382,7 @@ Object.values(EXAMS).forEach((x) => {
   x.bank = x.bank.map((q) => q.slice(1));
   x.pos = {};
   x.ids.forEach((id, i) => { if (id in x.pos) console.error(`Duplicate question id ${id}`); x.pos[id] = i; });
+  x.stretch = new Set(x.stretch.map((id) => x.pos[id]).filter((i) => i !== undefined)); // positions of stretch questions
 });
 const LETTERS = ["A", "B", "C", "D"];
 const $ = (id) => document.getElementById(id);
@@ -473,6 +478,8 @@ const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) {
 const rand = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+// Explanations: first line says why the answer is right; each later line (after "\n") says why one wrong option is wrong.
+const fmtExpl = (s) => { const [first, ...rest] = s.split("\n"); return `<span class="why">${fmt(first)}</span>` + (rest.length ? `<ul class="whynot">${rest.map((l) => `<li>${fmt(l)}</li>`).join("")}</ul>` : ""); };
 const stat = (id) => store.stats[id] || (store.stats[id] = { c: 0, w: 0 });
 const link = (q) => (/^https?:/.test(q[4]) ? q[4] : X.links[q[4]]);
 
@@ -564,6 +571,7 @@ function renderDrill() {
   const isRepeat = store.retry[cur] > 0 && picked === null;
   let h = `<div class="meta"><span class="tag">S${q[0]} · ${X.sections[q[0]]}</span>`;
   if (isRepeat) h += `<span class="tag repeat">Repeat of a miss</span>`;
+  if (X.stretch.has(cur)) h += `<span class="tag stretch" title="In scope, but deeper than the exam outline suggests. Not used in the timed mock.">Stretch</span>`;
   const st = picked !== null && outcome ? outcome.from : gst(cur);
   h += `<span class="stage">${plant(picked !== null && undo && undo.e === null ? -1 : st)}${stageLabel(picked !== null && undo && undo.e === null ? -1 : st)}</span>`;
   if (s) h += `<span>seen ${s.c + s.w}× · missed ${s.w}×</span>`;
@@ -577,7 +585,7 @@ function renderDrill() {
   h += `</div>`;
   if (picked !== null) {
     const ok = perm[picked] === 0, url = link(q);
-    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
+    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmtExpl(q[3])}<a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
     h += `</div>`;
     const canGuess = ok && outcome.kind !== "guessed";
     h += `<div class="next-strip ${outcome.kind}"><span class="next-out">${plant(outcome.to)}<span>${growthMsg(outcome)}</span>${canGuess ? `<span class="sep">·</span><button class="linkish quiet" id="guess" type="button" aria-keyshortcuts="G">I guessed</button>` : ""}</span>`;
@@ -601,7 +609,7 @@ let exam = null, tick = null;
 function startExam() {
   const ids = [];
   Object.entries(X.split).forEach(([sec, n]) => {
-    const p = shuffle(BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec)));
+    const p = shuffle(BANKX.map((_, i) => i).filter((i) => BANKX[i][0] === Number(sec) && !X.stretch.has(i))); // the mock mirrors the real exam, so no stretch questions
     p.sort((a, b) => (store.stats[a] ? 1 : 0) - (store.stats[b] ? 1 : 0)); // prefer unseen
     ids.push(...p.slice(0, n));
   });
@@ -655,7 +663,7 @@ function renderResults() {
   exam.ids.forEach((id, k) => {
     const q = BANKX[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
     if (ok) return;
-    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><p class="small">${fmt(q[3])} <a href="${link(q)}" target="_blank" rel="noopener">Docs</a></p></div>`;
+    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><div class="small">${fmtExpl(q[3])} <a href="${link(q)}" target="_blank" rel="noopener">Docs</a></div></div>`;
   });
   h += `</div>`;
   $("main").innerHTML = h;

@@ -8,11 +8,11 @@ const dir = path.join(__dirname, "..", "src", "questions");
 const ctx = {};
 vm.createContext(ctx);
 for (const f of ["associate.js", "professional.js"]) vm.runInContext(fs.readFileSync(path.join(dir, f), "utf8"), ctx, { filename: f });
-vm.runInContext("this.out = { BANK, PBANK, LINKS }", ctx);
-const { BANK, PBANK, LINKS } = ctx.out;
+vm.runInContext("this.out = { BANK, PBANK, LINKS, BANK_STRETCH, PBANK_STRETCH }", ctx);
+const { BANK, PBANK, LINKS, BANK_STRETCH, PBANK_STRETCH } = ctx.out;
 
 const problems = [];
-const check = (name, bank, prefix, sections) => {
+const check = (name, bank, prefix, sections, stretch) => {
   const seen = new Map(), texts = new Map();
   bank.forEach((q, i) => {
     const [id, sec, text, opts, expl, doc] = q;
@@ -27,10 +27,11 @@ const check = (name, bank, prefix, sections) => {
     if (!expl) problems.push(`${where}: missing explanation`);
     if (!(typeof doc === "string" && (/^https?:\/\//.test(doc) || (name === "BANK" && LINKS[doc])))) problems.push(`${where}: docs link "${doc}" isn't a URL or a known key`);
   });
-  console.log(`${name}: ${bank.length} questions, ids ${bank[0][0]}–${bank[bank.length - 1][0]}`);
+  stretch.forEach((id) => { if (!seen.has(id)) problems.push(`${name} stretch list: ${id} isn't a question in the bank`); });
+  console.log(`${name}: ${bank.length} questions, ids ${bank[0][0]}–${bank[bank.length - 1][0]}, ${stretch.length} tagged stretch`);
 };
-check("BANK", BANK, "A", 7);
-check("PBANK", PBANK, "P", 9);
+check("BANK", BANK, "A", 7, BANK_STRETCH);
+check("PBANK", PBANK, "P", 9, PBANK_STRETCH);
 
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):\n` + problems.join("\n"));
