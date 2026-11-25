@@ -150,6 +150,9 @@ code { font-family: var(--mono); font-size: .86em; background: var(--surface-2);
 /* Feedback: a field note set off by a single rule, not a box */
 .feedback { overflow-wrap: anywhere; margin-top: 26px; padding: 2px 0 2px 18px; border-left: 2px solid var(--line-strong); }
 .feedback.ok { border-left-color: var(--good); }
+.feedback .why { display: block; }
+.whynot { margin: 8px 0 10px; padding-left: 18px; }
+.whynot li { margin: 3px 0; }
 .feedback.no { border-left-color: var(--bad); }
 .feedback strong { display: block; margin-bottom: 4px; font: 600 18px var(--display); font-variation-settings: "opsz" 24; }
 .feedback.ok strong { color: var(--good); }
@@ -473,6 +476,8 @@ const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) {
 const rand = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+// Explanations: first line says why the answer is right; each later line (after "\n") says why one wrong option is wrong.
+const fmtExpl = (s) => { const [first, ...rest] = s.split("\n"); return `<span class="why">${fmt(first)}</span>` + (rest.length ? `<ul class="whynot">${rest.map((l) => `<li>${fmt(l)}</li>`).join("")}</ul>` : ""); };
 const stat = (id) => store.stats[id] || (store.stats[id] = { c: 0, w: 0 });
 const link = (q) => (/^https?:/.test(q[4]) ? q[4] : X.links[q[4]]);
 
@@ -577,7 +582,7 @@ function renderDrill() {
   h += `</div>`;
   if (picked !== null) {
     const ok = perm[picked] === 0, url = link(q);
-    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmt(q[3])}<br><a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
+    h += `<div class="feedback ${ok ? "ok" : "no"}"><strong>${ok ? "Correct" : "Not quite. Answer: " + LETTERS[perm.indexOf(0)]}</strong>${fmtExpl(q[3])}<a href="${url}" target="_blank" rel="noopener">${url.replace("https://", "")}</a>`;
     h += `</div>`;
     const canGuess = ok && outcome.kind !== "guessed";
     h += `<div class="next-strip ${outcome.kind}"><span class="next-out">${plant(outcome.to)}<span>${growthMsg(outcome)}</span>${canGuess ? `<span class="sep">·</span><button class="linkish quiet" id="guess" type="button" aria-keyshortcuts="G">I guessed</button>` : ""}</span>`;
@@ -655,7 +660,7 @@ function renderResults() {
   exam.ids.forEach((id, k) => {
     const q = BANKX[id], p = exam.perms[k], pick = exam.picks[k], ok = pick !== null && p[pick] === 0;
     if (ok) return;
-    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><p class="small">${fmt(q[3])} <a href="${link(q)}" target="_blank" rel="noopener">Docs</a></p></div>`;
+    h += `<div class="item"><p><b>Q${k + 1}.</b> ${fmt(q[1])}</p><p class="small">You: ${pick === null ? "no answer" : fmt(q[2][p[pick]])}</p><p><b>Answer:</b> ${fmt(q[2][0])}</p><div class="small">${fmtExpl(q[3])} <a href="${link(q)}" target="_blank" rel="noopener">Docs</a></div></div>`;
   });
   h += `</div>`;
   $("main").innerHTML = h;

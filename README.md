@@ -4,8 +4,8 @@ An unofficial, single-page practice drill for two Databricks certifications. A t
 
 | Exam | Questions in the bank | Timed mock |
 |---|---|---|
-| Data Engineer **Associate** (guide of 4 May 2026, updated 6 Aug 2026) | 278 | 45 questions, 90 minutes |
-| Data Engineer **Professional** (guide of 9 Oct 2026) | 200 | 60 questions, 120 minutes |
+| Data Engineer **Associate** (guide of 4 May 2026, updated 6 Aug 2026) | 324 | 45 questions, 90 minutes |
+| Data Engineer **Professional** (guide of 9 Oct 2026) | 231 | 60 questions, 120 minutes |
 
 Every question has instant feedback. Each question is also a plant in a knowledge garden: each correct answer grows it one stage from a seed to a bloom, a wrong answer resets it, and blooms come back now and then to check they've stuck.
 
@@ -19,7 +19,7 @@ The page, the question bank and this README were written by **Claude** (Anthropi
 
 ## Features
 
-- **Drill mode.** Each answer gets instant feedback, a one-line explanation and a link to the relevant docs page. Option order is shuffled every time.
+- **Drill mode.** Each answer gets instant feedback and a link to the relevant docs page. The explanation says why the right answer is right, then gives one line per wrong option saying why it doesn't fit, with the most care on the near-misses. Option order is shuffled every time.
 - **Knowledge garden.** Every question is a plant with six stages:
 
   | Stage | How it gets there | Comes back after |
@@ -102,6 +102,13 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
     It then clicked through both exams in a browser.
 12. **Replaced the miss queue with a knowledge garden.** Edward suggested the idea: a correct answer seeds a question, later correct answers grow it, it blooms at five, and blooms are retested in case they need resetting. Claude added the rules that make it spaced repetition rather than raw repetition: growth gaps that widen with each stage, a two-stage drop for wrong answers, and an "I guessed" button. Existing browser progress converts on first load. Questions already right more often than wrong start as sprouts, other correct ones as seeds, and current misses as "not rooted yet". Claude tested it by simulating 1,500 answers with 10% wrong on the Professional bank. All 200 questions moved from seed to bloom in about 1,200 answers, and no stage was starved. It then checked the garden view, the guess button and phone layout in a browser.
 13. **Simplified the growth rules.** After trying it, Edward found that holding back growth until enough questions had passed didn't match the original idea. The rules now follow it: every correct answer grows a plant one stage, and any wrong answer resets it to the start. The widening gaps stay, but only to space out when a question comes back.
+14. **Filled gaps and rewrote every explanation.** After sitting the Associate exam, Edward said he hadn't been ready for questions on Auto Loader, Lakeflow pipelines and when to use which method, and that explanations didn't always say why similar answers were wrong.
+    - **80 new questions** (79 kept), mostly "which approach fits this scenario", written by five research agents to the same sourcing rules as before:
+      - Associate (A279–A326): Auto Loader in pipelines and SQL, backfills, overwrites, `cleanSource`, file events, triggers, VARIANT and binary files; choosing streaming tables, materialized views and views, flows, expectations and pipelines over hand-built streaming jobs; compute choice, startup failures, library conflicts, out-of-memory and spill, and job task types.
+      - Professional (P201–P232): Structured Streaming versus Lakeflow pipelines, output modes, stream-stream joins, deduplication, checkpoint changes, `foreachBatch` and ForEachBatch sinks, append flows and backfills, incremental refresh policy; Kafka and Kinesis offsets, Delta streaming sources, CSV bad records; job notifications, anomaly detection, budgets and CLI run monitoring.
+    - **Every explanation rewritten** (seven agents, one range each): one line on why the answer is right, then one line per wrong option. Options are shuffled, so each wrong option is named by its wording, never by letter. Where a reason wasn't already clear, six of the seven agents checked the cited docs page; the P135–P200 range was rewritten from the existing explanations without re-opening the docs, so treat its wrong-option lines with a little more caution.
+    - **Corrections found along the way**: A011 is now limited to Databricks Runtime 17.3 LTS (from 18.0 the file limit is set dynamically); A089 now says file events are off (with them, the limit is 25 tables); A115 uses the Spark UI guide's 75th-percentile rule; A143 names the `READ METADATA` exception; A148 is limited to Unity Catalog compute; P010 names the `MANAGE ALLOWLIST` privilege; A055 and A183 say incremental refresh needs serverless; A042 has a better docs link; A273 and P088 are reworded. A224 (which accounts had predictive optimization on by default) was removed, because the current docs say it's on by default with no date cutoff. A131 now explains that Unity Catalog's only DENY is the ABAC DENY policy (Beta), which can deny `MANAGE ACCESS CONTROL` but not `SELECT`; the SQL `DENY` statement is Hive metastore only.
+    - **Checked**: no existing id was changed and only those answers moved; the bank checks pass; all 189 cited docs URLs return HTTP 200; three agents checked every question against its exam outline. None were out of scope. A125 moved to Section 1, and A174 and A180 to Section 4. P129 was removed as a near-duplicate of P044 filed under the wrong section, and A291 because A290 already covers it. About 30 questions, mostly new Auto Loader and pipeline scenarios, go deeper than a typical Associate question but test features the outline names, so they stay; and both exams were tested in Chrome, including that saved progress (and the removed A224's plant) survives a reload.
 
 ### Known limitations
 
@@ -115,10 +122,11 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
 - Databricks changes quickly, so defaults and preview features (marked Beta or Public Preview in the explanations) may have changed since October 2026.
 - Professional gaps the research agents reported, where the docs didn't confirm enough to write questions:
   - tokenisation (anonymisation is covered through hashing and generalisation);
-  - Databricks SDK examples for monitoring runs;
-  - Kafka and Kinesis starting-offset defaults;
+  - Databricks SDK examples for monitoring runs (the CLI is covered instead);
   - Iceberg as an AUTO CDC target;
-  - metric view join syntax.
+  - metric view join syntax;
+  - cloud quota or capacity as a cause of cluster startup failures, and driver out-of-memory fixes;
+  - the Associate guide's split between Lakeflow Connect "standard" and "managed" connectors (the docs don't use the term "standard connectors").
 - `assertDataFrameEqual` / `assertSchemaEqual` and default window frames cite the Apache Spark docs.
 - The current docs call Delta Sharing **OpenSharing** and the Delta cache the **disk cache**, so the questions use those names.
 - In one place the Associate exam guide and the docs disagree. The guide talks about creating pull requests "using Databricks Git integration", while the Git folders docs say to open them in your Git provider. The question on this explains the difference.
@@ -127,12 +135,12 @@ It was built over several study sessions in Claude Code (26 October to 5 Novembe
 
 - `index.html`: a redirect so the site root opens the drill.
 - `src/practice.html`: the app (layout, styles and the drill, garden and mock exam logic).
-- `src/questions/associate.js` and `src/questions/professional.js`: the question banks, one per exam. Each question is a JavaScript array: `[id, section, question, [correct, wrong, wrong, wrong], explanation, docKey or docs URL]`. The correct option is listed first in the data and shuffled when shown. They're plain scripts rather than JSON so the page still works when opened straight from disk.
+- `src/questions/associate.js` and `src/questions/professional.js`: the question banks, one per exam. Each question is a JavaScript array: `[id, section, question, [correct, wrong, wrong, wrong], explanation, docKey or docs URL]`. The correct option is listed first in the data and shuffled when shown. An explanation is one string: the first line says why the answer is right, and each following line (separated by `\n`) names one wrong option by its wording and says why it's wrong; the page shows those as a short list. They're plain scripts rather than JSON so the page still works when opened straight from disk.
 - `scripts/check-questions.js`: checks the banks before publishing. Run `node scripts/check-questions.js`.
 
 ### Editing the question banks without losing anyone's progress
 
-Every question has a permanent id (`A001`–`A278` for Associate, `P001`–`P200` for Professional). Garden progress is saved in each visitor's browser against that id, so:
+Every question has a permanent id (`A001`–`A326` for Associate, `P001`–`P232` for Professional; `A224`, `A291` and `P129` were removed and must not be reused). Garden progress is saved in each visitor's browser against that id, so:
 
 - **Reordering, rewording and deleting questions is safe.** Progress follows the id. If a question is deleted, its saved progress is kept and comes back if the question does.
 - **Give a new question the next unused number** (for example `A279`) and add it anywhere in its bank.
